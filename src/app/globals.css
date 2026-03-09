@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --gold-primary: #FFD46A;
+  --gold-deep: #F5A623;
+  --gold-ember: #D87C1E;
+  --bronze: #8A3F12;
+  --bg-cosmic: #3B1206;
+  --gold-motto: #F7C75A;
+  --cream: #FFF8E7;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-gold-primary: #FFD46A;
+  --color-gold-deep: #F5A623;
+  --color-gold-ember: #D87C1E;
+  --color-bronze: #8A3F12;
+  --color-cosmic: #3B1206;
+  --color-gold-motto: #F7C75A;
+  --color-cream: #FFF8E7;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #1A0A04;
+  color: var(--cream);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Radial glow behind hero */
+.hero-glow {
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(245, 166, 35, 0.15) 0%, transparent 70%);
+}
+
+/* Gold divider line */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #F5A623, transparent);
+}
+
+/* Subtle card hover */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(245, 166, 35, 0.2);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1A0A04;
+}
+::-webkit-scrollbar-thumb {
+  background: #8A3F12;
+  border-radius: 3px;
 }
