@@ -153,17 +153,14 @@ section { padding: 120px 40px; }
 }
 @keyframes twinkle { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
-.hero-logo {
-  width: 400px; height: 400px;
-  border-radius: 50%; object-fit: cover;
+.hero-seal {
+  width: 100vw;
+  max-width: 1100px;
   margin-bottom: 40px;
-  filter: drop-shadow(0 0 60px rgba(202,144,61,0.2)) drop-shadow(0 0 120px rgba(129,85,30,0.15));
-  animation: logoReveal 2s ease-out, logoGlow 4s ease-in-out infinite alternate 2s;
-}
-@keyframes logoReveal { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }
-@keyframes logoGlow {
-  0% { filter: drop-shadow(0 0 60px rgba(202,144,61,0.2)) drop-shadow(0 0 120px rgba(129,85,30,0.15)); }
-  100% { filter: drop-shadow(0 0 80px rgba(202,144,61,0.35)) drop-shadow(0 0 150px rgba(129,85,30,0.2)); }
+  mask-image: radial-gradient(ellipse 60% 60% at center, black 45%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 60% at center, black 45%, transparent 70%);
+  filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
+  animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
 
 .hero-title {
@@ -679,9 +676,12 @@ section.voice-reading::after {
 }
 
 .enter-logo {
-  width: 480px;
-  max-width: 85vw;
+  width: 100vw;
+  max-height: 70vh;
+  object-fit: contain;
   margin-bottom: 50px;
+  mask-image: radial-gradient(ellipse 70% 50% at center, black 35%, transparent 62%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 50% at center, black 35%, transparent 62%);
   filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
@@ -755,7 +755,7 @@ section.voice-reading::after {
 
 @media (max-width: 768px) {
   body { font-size: 16px; }
-  .hero-logo { width: 280px; height: 280px; }
+  .hero-seal { width: 95vw; max-width: 500px; }
   .hero-title { font-size: 2rem; letter-spacing: 5px; }
   .pillars-descriptions { grid-template-columns: 1fr; gap: 30px; }
   .education-grid { grid-template-columns: 1fr; }

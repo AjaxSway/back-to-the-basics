@@ -143,25 +143,45 @@ function useVoiceSystem(entered: boolean) {
 
 function useAmbientMusic(enabled: boolean) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const targetVol = 0.07;
+  const fadeDuration = 3; // seconds to crossfade at loop boundary
 
   useEffect(() => {
-    if (!enabled) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-      return;
-    }
-    const audio = new Audio("/audio/ambient.mp3");
+    const audio = document.createElement("audio");
+    audio.src = "/audio/ambient.mp3";
     audio.loop = true;
-    audio.volume = 0.15;
+    audio.volume = 0;
+    audio.preload = "auto";
     audioRef.current = audio;
-    audio.play().catch(() => {});
-    return () => {
-      audio.pause();
-      audio.currentTime = 0;
+
+    // Crossfade: fade out before end, fade in after loop restart
+    let frameId: number;
+    const crossfade = () => {
+      if (!audio.duration || audio.paused) { frameId = requestAnimationFrame(crossfade); return; }
+      const timeLeft = audio.duration - audio.currentTime;
+      if (timeLeft < fadeDuration) {
+        audio.volume = Math.max(0, targetVol * (timeLeft / fadeDuration));
+      } else if (audio.currentTime < fadeDuration) {
+        audio.volume = Math.min(targetVol, targetVol * (audio.currentTime / fadeDuration));
+      } else {
+        audio.volume = targetVol;
+      }
+      frameId = requestAnimationFrame(crossfade);
     };
+    frameId = requestAnimationFrame(crossfade);
+
+    return () => { cancelAnimationFrame(frameId); audio.pause(); audio.src = ""; };
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (enabled) {
+      audio.volume = 0;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
   }, [enabled]);
 }
 
@@ -211,7 +231,8 @@ export default function Home() {
   useScrollReveal();
   useNavScroll();
   const [musicEnabled, setMusicEnabled] = useState(true);
-  useAmbientMusic(musicEnabled && entered);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  useAmbientMusic(musicEnabled && audioUnlocked);
   const [mobileNav, setMobileNav] = useState(false);
   const [storySubmitted, setStorySubmitted] = useState(false);
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
@@ -221,12 +242,13 @@ export default function Home() {
   const sc = (id: string, base = "") =>
     `${base}${voice.activeSection === id ? " voice-reading" : ""}`.trim();
 
+  const handleEnter = () => { setAudioUnlocked(true); setEntered(true); };
+
   if (!entered) {
     return (
-      <div className="enter-gate" onClick={() => setEntered(true)}>
+      <div className="enter-gate">
         <img src="/images/entry-seal.png" alt="Back to the Basics Movement" className="enter-logo" />
-        <button className="enter-btn" onClick={() => setEntered(true)}>Enter the Movement</button>
-        <p className="enter-hint">Sound will begin automatically</p>
+        <button className="enter-btn" onClick={handleEnter}>Enter the Movement</button>
       </div>
     );
   }
@@ -279,7 +301,7 @@ export default function Home() {
 
       {/* 1. HERO */}
       <section className={sc("home", "hero")} id="home">
-        <img src="/images/hero-logo.jpg" alt="Back to the Basics Movement Seal" className="hero-logo heartbeat" />
+        <img src="/images/hero-seal.png" alt="Back to the Basics Movement Seal" className="hero-seal" />
         <h1 className="hero-title">Back to the Basics</h1>
         <p className="hero-subtitle">Restoring clarity in a distracted world.</p>
         <p className="hero-tagline">Guarded &middot; Grounded &middot; Grateful</p>
