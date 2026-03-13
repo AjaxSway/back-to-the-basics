@@ -96,25 +96,33 @@ function useVoiceSystem(entered: boolean) {
   );
 
   // When audio ends, auto-advance to next section
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onEnded = () => {
-      const finishedId = currentRef.current;
-      currentRef.current = null;
-      setActiveSection(null);
-      // Find the next section and auto-play it
-      if (finishedId) {
-        const idx = SECTION_IDS.indexOf(finishedId);
-        if (idx >= 0 && idx < SECTION_IDS.length - 1) {
-          const nextId = SECTION_IDS[idx + 1];
-          setTimeout(() => playAndScroll(nextId, true), 1200);
-        }
+  // Use a ref-based callback so this works even if audioRef is null on first render
+  const onEndedRef = useRef<(() => void) | undefined>(undefined);
+  onEndedRef.current = () => {
+    const finishedId = currentRef.current;
+    currentRef.current = null;
+    setActiveSection(null);
+    if (finishedId) {
+      const idx = SECTION_IDS.indexOf(finishedId);
+      if (idx >= 0 && idx < SECTION_IDS.length - 1) {
+        const nextId = SECTION_IDS[idx + 1];
+        setTimeout(() => playAndScroll(nextId, true), 1200);
       }
+    }
+  };
+
+  // Attach ended listener inside playAndScroll's try block won't work cleanly,
+  // so use a one-time effect that polls for the audio element
+  useEffect(() => {
+    const handler = () => onEndedRef.current?.();
+    const attach = () => {
+      const audio = audioRef.current;
+      if (!audio) { requestAnimationFrame(attach); return; }
+      audio.addEventListener("ended", handler);
     };
-    audio.addEventListener("ended", onEnded);
-    return () => audio.removeEventListener("ended", onEnded);
-  }, [playAndScroll]);
+    attach();
+    return () => audioRef.current?.removeEventListener("ended", handler);
+  }, []);
 
   // Autoplay home audio once user has entered
   useEffect(() => {
