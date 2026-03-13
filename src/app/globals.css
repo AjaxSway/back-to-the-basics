@@ -110,6 +110,7 @@ nav.scrolled { padding: 10px 40px; background: rgba(5,4,3,0.97); }
   background: var(--gold);
 }
 
+
 /* GENERAL */
 section { padding: 120px 40px; }
 
@@ -669,19 +670,21 @@ section.voice-reading::after {
   text-align: center;
   background: var(--bg-deep);
   cursor: pointer;
-  padding: 40px 20px;
+  padding: 40px 0;
+  overflow: hidden;
   background-image:
     radial-gradient(ellipse at center, rgba(129,85,30,0.08) 0%, transparent 50%),
     radial-gradient(ellipse at center bottom, rgba(129,85,30,0.06) 0%, transparent 60%);
 }
 
 .enter-logo {
-  width: 100vw;
-  max-height: 70vh;
+  width: 98vw;
+  max-width: 1400px;
+  max-height: 85vh;
   object-fit: contain;
-  margin-bottom: 50px;
-  mask-image: radial-gradient(ellipse 70% 50% at center, black 35%, transparent 62%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 50% at center, black 35%, transparent 62%);
+  margin-bottom: 40px;
+  mask-image: radial-gradient(ellipse 80% 75% at center, black 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 60%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 75% at center, black 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 60%, transparent 80%);
   filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
@@ -717,11 +720,56 @@ section.voice-reading::after {
 }
 
 .enter-hint {
-  font-size: 0.75rem;
-  color: var(--text-dim);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-top: 24px;
+  opacity: 0.7;
+  animation: fadeUp 1.8s ease-out 1.2s both;
+}
+
+/* GATE SOUND CONTROL — upper right of entry page */
+.gate-sound-control {
+  position: absolute;
+  top: 28px;
+  right: 5%;
+  background: none;
+  border: 1px solid rgba(202,144,61,0.25);
+  color: rgba(255,255,255,0.5);
+  border-radius: 40px;
+  padding: 8px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  animation: fadeUp 1.8s ease-out 1.2s both;
+  z-index: 10;
+}
+.gate-sound-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
   letter-spacing: 2px;
-  margin-top: 20px;
-  animation: fadeUp 1.5s ease-out 0.9s both;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
+}
+.gate-sound-control:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.gate-sound-control:hover .gate-sound-label {
+  color: var(--gold);
+}
+.gate-sound-control.on {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(202,144,61,0.06);
+}
+.gate-sound-control.on .gate-sound-label {
+  color: var(--gold);
 }
 
 /* MUSIC TOGGLE */

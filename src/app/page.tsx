@@ -19,6 +19,9 @@ function useVoiceSystem(entered: boolean) {
   const playedRef = useRef(new Set<string>());
   const currentRef = useRef<string | null>(null);
   const unlockedRef = useRef(false);
+  const autoScrollingRef = useRef(true); // auto-scroll mode (user can override by scrolling)
+  const userScrolledRef = useRef(false);
+  const scrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -26,38 +29,103 @@ function useVoiceSystem(entered: boolean) {
     if (stored === "0") setEnabled(false);
   }, []);
 
-  // Autoplay home audio once user has entered (user gesture unlocks audio)
+  // Detect manual user scroll — pause auto-scroll until voice catches up
   useEffect(() => {
-    if (!entered || !enabled) return;
-    unlockedRef.current = true;
-    const timer = setTimeout(() => {
-      if (audioRef.current) {
-        audioRef.current.src = "/audio/home.mp3";
-        audioRef.current.play().then(() => {
-          playedRef.current.add("home");
-          currentRef.current = "home";
-          setActiveSection("home");
-        }).catch(() => {
-          unlockedRef.current = false;
-        });
-      }
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [entered, enabled]);
+    let timeout: ReturnType<typeof setTimeout>;
+    const onWheel = () => {
+      userScrolledRef.current = true;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => { userScrolledRef.current = false; }, 3000);
+    };
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchmove", onWheel, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchmove", onWheel);
+      clearTimeout(timeout);
+    };
+  }, []);
 
-  // Clear activeSection when audio ends
+  // Play a section and scroll to it
+  const playAndScroll = useCallback(
+    async (sectionId: string, force = false) => {
+      if (!unlockedRef.current) return;
+      if (!SECTION_IDS.includes(sectionId)) return;
+      if (!force && playedRef.current.has(sectionId)) return;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (!audioRef.current) return;
+      audioRef.current.src = `/audio/${sectionId}.mp3`;
+      currentRef.current = sectionId;
+      setActiveSection(sectionId);
+      try {
+        await audioRef.current.play();
+        playedRef.current.add(sectionId);
+        // Progressive scroll: check every 2s and nudge scroll to match audio progress
+        if (scrollTimerRef.current) clearInterval(scrollTimerRef.current);
+        const el = document.getElementById(sectionId);
+        if (el && !userScrolledRef.current) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+          const audio = audioRef.current;
+          scrollTimerRef.current = setInterval(() => {
+            if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+              if (scrollTimerRef.current) clearInterval(scrollTimerRef.current);
+              return;
+            }
+            if (userScrolledRef.current) return;
+            const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+            const rect = el.getBoundingClientRect();
+            const sectionHeight = el.scrollHeight;
+            const viewHeight = window.innerHeight;
+            const scrollableAmount = Math.max(0, sectionHeight - viewHeight * 0.6);
+            const sectionTop = window.scrollY + rect.top;
+            const targetY = sectionTop + scrollableAmount * progress;
+            window.scrollTo({ top: targetY, behavior: "smooth" });
+          }, 2000);
+        }
+      } catch {
+        unlockedRef.current = false;
+        setActiveSection(null);
+      }
+    },
+    []
+  );
+
+  // When audio ends, auto-advance to next section
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     const onEnded = () => {
+      const finishedId = currentRef.current;
       currentRef.current = null;
       setActiveSection(null);
+      // Find the next section and auto-play it
+      if (finishedId && autoScrollingRef.current) {
+        const idx = SECTION_IDS.indexOf(finishedId);
+        if (idx >= 0 && idx < SECTION_IDS.length - 1) {
+          const nextId = SECTION_IDS[idx + 1];
+          setTimeout(() => playAndScroll(nextId, true), 1200);
+        }
+      }
     };
     audio.addEventListener("ended", onEnded);
     return () => audio.removeEventListener("ended", onEnded);
-  }, []);
+  }, [playAndScroll]);
+
+  // Autoplay home audio once user has entered
+  useEffect(() => {
+    if (!entered || !enabled) return;
+    unlockedRef.current = true;
+    const timer = setTimeout(() => {
+      playAndScroll("home", true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [entered, enabled, playAndScroll]);
 
   const stop = useCallback(() => {
+    if (scrollTimerRef.current) clearInterval(scrollTimerRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -66,36 +134,18 @@ function useVoiceSystem(entered: boolean) {
     setActiveSection(null);
   }, []);
 
-  const play = useCallback(
-    async (sectionId: string, force = false) => {
-      if (!unlockedRef.current) return;
-      if (!SECTION_IDS.includes(sectionId)) return;
-      if (!force && playedRef.current.has(sectionId)) return;
-      stop();
-      if (!audioRef.current) return;
-      audioRef.current.src = `/audio/${sectionId}.mp3`;
-      currentRef.current = sectionId;
-      setActiveSection(sectionId);
-      try {
-        await audioRef.current.play();
-        playedRef.current.add(sectionId);
-      } catch {
-        unlockedRef.current = false;
-        setActiveSection(null);
-      }
-    },
-    [stop]
-  );
-
   const toggle = useCallback(async () => {
     const next = !enabled;
     setEnabled(next);
     localStorage.setItem("btb_voice_enabled", next ? "1" : "0");
     if (!next) {
       stop();
+      autoScrollingRef.current = false;
       return;
     }
     unlockedRef.current = true;
+    autoScrollingRef.current = true;
+    // Find the most visible section and start reading from there
     const sections = document.querySelectorAll("section[id]");
     let bestId: string | null = null;
     let bestRatio = 0;
@@ -109,14 +159,17 @@ function useVoiceSystem(entered: boolean) {
         bestId = sec.id;
       }
     });
-    if (bestId && bestRatio >= 0.35) await play(bestId, true);
-  }, [enabled, stop, play]);
+    if (bestId && bestRatio >= 0.35) await playAndScroll(bestId, true);
+  }, [enabled, stop, playAndScroll]);
 
+  // Also respond to manual scroll — if user scrolls to a new section, play it
   useEffect(() => {
     if (!enabled) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (!unlockedRef.current) return;
+        // Only trigger on manual scroll, not auto-scroll
+        if (!userScrolledRef.current) return;
         let best: IntersectionObserverEntry | null = null;
         for (const e of entries) {
           if (!e.isIntersecting) continue;
@@ -125,15 +178,27 @@ function useVoiceSystem(entered: boolean) {
         if (!best) return;
         const id = (best.target as HTMLElement).id;
         if (!id || id === currentRef.current) return;
-        play(id);
+        playAndScroll(id, true);
       },
       { threshold: [0.35, 0.5, 0.65] }
     );
     document.querySelectorAll("section[id]").forEach((s) => observer.observe(s));
     return () => observer.disconnect();
-  }, [enabled, play]);
+  }, [enabled, playAndScroll]);
 
-  return { audioRef, enabled, activeSection, toggle };
+  const pause = useCallback(() => {
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+    }
+  }, []);
+
+  const resume = useCallback(() => {
+    if (audioRef.current && audioRef.current.paused && audioRef.current.src && currentRef.current) {
+      audioRef.current.play().catch(() => {});
+    }
+  }, []);
+
+  return { audioRef, enabled, activeSection, toggle, pause, resume };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -143,18 +208,21 @@ function useVoiceSystem(entered: boolean) {
 
 function useAmbientMusic(enabled: boolean) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const targetVol = 0.07;
-  const fadeDuration = 3; // seconds to crossfade at loop boundary
+  const playingRef = useRef(false);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+  const targetVol = 0.03;
+  const fadeDuration = 3;
 
   useEffect(() => {
     const audio = document.createElement("audio");
     audio.src = "/audio/ambient.mp3";
     audio.loop = true;
-    audio.volume = 0;
+    audio.volume = targetVol;
     audio.preload = "auto";
     audioRef.current = audio;
 
-    // Crossfade: fade out before end, fade in after loop restart
+    // Crossfade at loop boundaries
     let frameId: number;
     const crossfade = () => {
       if (!audio.duration || audio.paused) { frameId = requestAnimationFrame(crossfade); return; }
@@ -170,17 +238,41 @@ function useAmbientMusic(enabled: boolean) {
     };
     frameId = requestAnimationFrame(crossfade);
 
-    return () => { cancelAnimationFrame(frameId); audio.pause(); audio.src = ""; };
+    // Start music — called on user activation events
+    const startMusic = () => {
+      if (playingRef.current || !enabledRef.current) return;
+      audio.volume = targetVol;
+      audio.play().then(() => {
+        playingRef.current = true;
+        cleanup();
+      }).catch(() => {});
+    };
+
+    // User activation events (these are what browsers actually accept)
+    const activationEvents = ["click", "touchstart", "pointerdown", "keydown"];
+    const cleanup = () => {
+      activationEvents.forEach(e => document.removeEventListener(e, startMusic, true));
+    };
+    activationEvents.forEach(e => document.addEventListener(e, startMusic, true));
+
+    // Also try autoplay immediately (works on some browsers/domains)
+    audio.play().then(() => {
+      playingRef.current = true;
+      cleanup();
+    }).catch(() => {});
+
+    return () => { cleanup(); cancelAnimationFrame(frameId); audio.pause(); audio.src = ""; };
   }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (enabled) {
-      audio.volume = 0;
-      audio.play().catch(() => {});
-    } else {
+    if (!enabled) {
       audio.pause();
+      playingRef.current = false;
+    } else {
+      audio.volume = targetVol;
+      audio.play().then(() => { playingRef.current = true; }).catch(() => {});
     }
   }, [enabled]);
 }
@@ -189,19 +281,24 @@ function useAmbientMusic(enabled: boolean) {
    SCROLL REVEAL HOOK
    ═══════════════════════════════════════════════════════════ */
 
-function useScrollReveal() {
+function useScrollReveal(entered: boolean) {
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("active");
-        });
-      },
-      { threshold: 0.1 }
-    );
-    document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
+    if (!entered) return;
+    // Small delay to ensure DOM has rendered
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) entry.target.classList.add("active");
+          });
+        },
+        { threshold: 0.1 }
+      );
+      document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+      return () => observer.disconnect();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [entered]);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -228,11 +325,10 @@ function useNavScroll() {
 export default function Home() {
   const [entered, setEntered] = useState(false);
   const voice = useVoiceSystem(entered);
-  useScrollReveal();
+  useScrollReveal(entered);
   useNavScroll();
   const [musicEnabled, setMusicEnabled] = useState(true);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
-  useAmbientMusic(musicEnabled && audioUnlocked);
+  useAmbientMusic(musicEnabled);
   const [mobileNav, setMobileNav] = useState(false);
   const [storySubmitted, setStorySubmitted] = useState(false);
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
@@ -242,11 +338,56 @@ export default function Home() {
   const sc = (id: string, base = "") =>
     `${base}${voice.activeSection === id ? " voice-reading" : ""}`.trim();
 
-  const handleEnter = () => { setAudioUnlocked(true); setEntered(true); };
+  const handleEnter = () => { setEntered(true); };
+
+  const [gateAudioPlaying, setGateAudioPlaying] = useState(false);
+  const founderVideoRef = useRef<HTMLVideoElement | null>(null);
+  const musicWasEnabled = useRef(true);
+
+  // Pause voice + music when video plays, resume when it ends/pauses
+  useEffect(() => {
+    const video = founderVideoRef.current;
+    if (!video) return;
+    const onPlay = () => {
+      musicWasEnabled.current = musicEnabled;
+      voice.pause();
+      setMusicEnabled(false);
+    };
+    const onStop = () => {
+      if (musicWasEnabled.current) setMusicEnabled(true);
+    };
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onStop);
+    video.addEventListener("ended", onStop);
+    return () => {
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onStop);
+      video.removeEventListener("ended", onStop);
+    };
+  });
 
   if (!entered) {
     return (
       <div className="enter-gate">
+        <button
+          className={`gate-sound-control${gateAudioPlaying ? " on" : ""}`}
+          onClick={() => setGateAudioPlaying(true)}
+          aria-label="Enable sound"
+        >
+          {gateAudioPlaying ? (
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              <line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+          )}
+          <span className="gate-sound-label">{gateAudioPlaying ? "Sound On" : "Better with Sound"}</span>
+        </button>
         <img src="/images/entry-seal.png" alt="Back to the Basics Movement" className="enter-logo" />
         <button className="enter-btn" onClick={handleEnter}>Enter the Movement</button>
       </div>
@@ -415,8 +556,9 @@ export default function Home() {
 
               {/* FOUNDER VIDEO */}
               <div className="founder-video-wrapper">
-                <video controls playsInline preload="metadata" poster="/images/founder_lantern_stewardship.png">
+                <video ref={founderVideoRef} controls playsInline preload="metadata" poster="/images/founder_lantern_stewardship.png">
                   <source src="/video/founder-video.mp4" type="video/mp4" />
+                  <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
                   Your browser does not support the video tag.
                 </video>
               </div>
