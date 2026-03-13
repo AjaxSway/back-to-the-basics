@@ -32,26 +32,43 @@ function useVoiceSystem(entered: boolean) {
     if (stored === "0") setEnabled(false);
   }, []);
 
-  // When user manually scrolls, stop current audio so the observer can pick up the new section
+  // Handle manual scroll — small movements ignored, big scrolls switch sections
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
+    let scrollStart: number | null = null;
+    let interrupted = false;
+
     const onScroll = () => {
+      // Track how far user has scrolled
+      if (scrollStart === null) scrollStart = window.scrollY;
+      const distance = Math.abs(window.scrollY - scrollStart);
+
+      // Always pause auto-scroll animation while user is scrolling
       userScrolledRef.current = true;
-      // Cancel any pending auto-advance
-      transitioningRef.current = false;
-      // Stop current audio so observer can fire for the new section
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        currentRef.current = null;
-        if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
-      }
       clearTimeout(timeout);
+
+      // Only interrupt audio if user scrolled more than 150px (real intentional scroll)
+      if (distance > 150 && !interrupted) {
+        interrupted = true;
+        transitioningRef.current = false;
+        if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          currentRef.current = null;
+          if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
+        }
+      }
+
       timeout = setTimeout(() => {
         userScrolledRef.current = false;
-        // After scroll settles, find and play the most visible section
+        const wasInterrupted = interrupted;
+        scrollStart = null;
+        interrupted = false;
+
+        if (!wasInterrupted) return; // small scroll — audio kept playing, nothing to do
+        // After a real scroll, find and play whatever section they landed on
         if (!unlockedRef.current || !audioRef.current) return;
-        if (!audioRef.current.paused) return; // something already started
+        if (!audioRef.current.paused) return;
         const sections = document.querySelectorAll("section[id]");
         let bestId: string | null = null;
         let bestRatio = 0;
@@ -62,7 +79,7 @@ function useVoiceSystem(entered: boolean) {
           const ratio = visible / Math.max(1, r.height);
           if (ratio > bestRatio) { bestRatio = ratio; bestId = sec.id; }
         });
-        if (bestId && bestRatio >= 0.3 && bestId !== currentRef.current) {
+        if (bestId && bestRatio >= 0.3) {
           playAndScrollRef.current?.(bestId, true);
         }
       }, 800);
