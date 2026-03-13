@@ -63,28 +63,6 @@ function useVoiceSystem(entered: boolean) {
       try {
         await audioRef.current.play();
         playedRef.current.add(sectionId);
-        // Progressive scroll: check every 2s and nudge scroll to match audio progress
-        if (scrollTimerRef.current) clearInterval(scrollTimerRef.current);
-        const el = document.getElementById(sectionId);
-        if (el && !userScrolledRef.current) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-          const audio = audioRef.current;
-          scrollTimerRef.current = setInterval(() => {
-            if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-              if (scrollTimerRef.current) clearInterval(scrollTimerRef.current);
-              return;
-            }
-            if (userScrolledRef.current) return;
-            const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-            const rect = el.getBoundingClientRect();
-            const sectionHeight = el.scrollHeight;
-            const viewHeight = window.innerHeight;
-            const scrollableAmount = Math.max(0, sectionHeight - viewHeight * 0.6);
-            const sectionTop = window.scrollY + rect.top;
-            const targetY = sectionTop + scrollableAmount * progress;
-            window.scrollTo({ top: targetY, behavior: "smooth" });
-          }, 2000);
-        }
       } catch {
         unlockedRef.current = false;
         setActiveSection(null);
