@@ -3,6 +3,14 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Prevent orphan words — no single word dangling alone on the last line */
+p, h1, h2, h3, h4, li, .memorial-text, .pillar-desc p, .perk-text, .testimonial-body {
+  text-wrap: pretty;
+}
+h1, h2, h3, .section-title, .hero-title, .hero-subtitle {
+  text-wrap: balance;
+}
+
 :root {
   --gold: #ca903d;
   --gold-bright: #d4a94e;
