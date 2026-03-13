@@ -25,6 +25,7 @@ function useVoiceSystem(entered: boolean) {
   const scrollTimerRef = useRef<number | null>(null);
   const transitioningRef = useRef(false); // true during auto-advance gap between sections
   const playAndScrollRef = useRef<((id: string, force?: boolean) => Promise<void>) | null>(null);
+  const bootedRef = useRef(false); // true after first section starts — blocks observer during startup
 
   // Check localStorage on mount
   useEffect(() => {
@@ -111,6 +112,7 @@ function useVoiceSystem(entered: boolean) {
       try {
         await audioRef.current.play();
         playedRef.current.add(sectionId);
+        bootedRef.current = true;
         // Progressive scroll: glide through the section in sync with the voice
         if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
         const el = document.getElementById(sectionId);
@@ -229,6 +231,8 @@ function useVoiceSystem(entered: boolean) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (!unlockedRef.current) return;
+        // Don't fire during initial startup — autoplay handles the first section
+        if (!bootedRef.current) return;
         // Don't hijack during auto-advance transition between sections
         if (transitioningRef.current) return;
         // Don't interrupt audio that's currently playing
