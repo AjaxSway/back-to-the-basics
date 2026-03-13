@@ -63,6 +63,11 @@ function useVoiceSystem(entered: boolean) {
       try {
         await audioRef.current.play();
         playedRef.current.add(sectionId);
+        // Smoothly scroll to this section when it starts playing
+        const el = document.getElementById(sectionId);
+        if (el && !userScrolledRef.current) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       } catch {
         unlockedRef.current = false;
         setActiveSection(null);
