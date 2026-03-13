@@ -140,28 +140,32 @@ function useVoiceSystem(entered: boolean) {
         if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
         const el = document.getElementById(sectionId);
         const audio = audioRef.current;
-        if (el && audio) {
-          const tick = () => {
-            if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
-            if (!autoScrollRef.current || userScrolledRef.current) {
-              scrollTimerRef.current = requestAnimationFrame(tick);
-              return;
-            }
-            const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+        if (el && audio && autoScrollRef.current) {
+          const sectionHeight = el.scrollHeight;
+          const viewHeight = window.innerHeight;
+          // Long sections (founder, etc.) — just scroll to top, let user read at their own pace
+          if (sectionHeight > viewHeight * 2.5) {
             const rect = el.getBoundingClientRect();
-            const sectionTop = window.scrollY + rect.top - 60; // offset for navbar
-            const sectionHeight = el.scrollHeight;
-            const viewHeight = window.innerHeight;
-            const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
-            // Cap scroll to only cover 2 screens worth max per audio clip
-            // Long sections (founder/memorials) won't race through
-            const maxScroll = viewHeight * 2.5;
-            const cappedRange = Math.min(scrollRange, maxScroll);
-            const targetY = sectionTop + cappedRange * progress;
-            window.scrollTo(0, targetY);
+            const sectionTop = window.scrollY + rect.top - 60;
+            window.scrollTo({ top: sectionTop, behavior: "smooth" });
+          } else {
+            // Short/medium sections — glide through in sync with voice
+            const tick = () => {
+              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
+              if (!autoScrollRef.current || userScrolledRef.current) {
+                scrollTimerRef.current = requestAnimationFrame(tick);
+                return;
+              }
+              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              const rect = el.getBoundingClientRect();
+              const sectionTop = window.scrollY + rect.top - 60;
+              const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
+              const targetY = sectionTop + scrollRange * progress;
+              window.scrollTo(0, targetY);
+              scrollTimerRef.current = requestAnimationFrame(tick);
+            };
             scrollTimerRef.current = requestAnimationFrame(tick);
-          };
-          scrollTimerRef.current = requestAnimationFrame(tick);
+          }
         }
       } catch {
         unlockedRef.current = false;
