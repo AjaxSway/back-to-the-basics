@@ -88,6 +88,7 @@ function useVoiceSystem(entered: boolean) {
       }
       if (!audioRef.current) return;
       audioRef.current.src = `/audio/${sectionId}.mp3`;
+      audioRef.current.playbackRate = 1.15;
       currentRef.current = sectionId;
       setActiveSection(sectionId);
       try {
