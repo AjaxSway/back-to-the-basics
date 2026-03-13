@@ -773,6 +773,30 @@ section.voice-reading::after {
   color: var(--gold);
 }
 
+/* AUTO-SCROLL TOGGLE */
+.autoscroll-toggle {
+  background: none;
+  border: 1px solid rgba(202,144,61,0.3);
+  color: var(--text-muted);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+}
+.autoscroll-toggle:hover { border-color: var(--gold); color: var(--gold); }
+.autoscroll-toggle.on {
+  border-color: var(--gold);
+  color: var(--bg-deep);
+  background: var(--gold);
+}
+
 /* MUSIC TOGGLE */
 .music-toggle {
   background: none;

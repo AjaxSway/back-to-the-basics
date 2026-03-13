@@ -19,7 +19,8 @@ function useVoiceSystem(entered: boolean) {
   const playedRef = useRef(new Set<string>());
   const currentRef = useRef<string | null>(null);
   const unlockedRef = useRef(false);
-  const autoScrollingRef = useRef(true); // auto-scroll mode (user can override by scrolling)
+  const [autoScroll, setAutoScroll] = useState(false); // off by default — user opts in
+  const autoScrollRef = useRef(false);
   const userScrolledRef = useRef(false);
   const scrollTimerRef = useRef<number | null>(null);
 
@@ -70,7 +71,7 @@ function useVoiceSystem(entered: boolean) {
         if (el && audio) {
           const tick = () => {
             if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
-            if (userScrolledRef.current) {
+            if (!autoScrollRef.current || userScrolledRef.current) {
               scrollTimerRef.current = requestAnimationFrame(tick);
               return;
             }
@@ -103,7 +104,7 @@ function useVoiceSystem(entered: boolean) {
       currentRef.current = null;
       setActiveSection(null);
       // Find the next section and auto-play it
-      if (finishedId && autoScrollingRef.current) {
+      if (finishedId) {
         const idx = SECTION_IDS.indexOf(finishedId);
         if (idx >= 0 && idx < SECTION_IDS.length - 1) {
           const nextId = SECTION_IDS[idx + 1];
@@ -141,11 +142,9 @@ function useVoiceSystem(entered: boolean) {
     localStorage.setItem("btb_voice_enabled", next ? "1" : "0");
     if (!next) {
       stop();
-      autoScrollingRef.current = false;
       return;
     }
     unlockedRef.current = true;
-    autoScrollingRef.current = true;
     // Find the most visible section and start reading from there
     const sections = document.querySelectorAll("section[id]");
     let bestId: string | null = null;
@@ -199,7 +198,15 @@ function useVoiceSystem(entered: boolean) {
     }
   }, []);
 
-  return { audioRef, enabled, activeSection, toggle, pause, resume };
+  const toggleAutoScroll = useCallback(() => {
+    setAutoScroll(prev => {
+      const next = !prev;
+      autoScrollRef.current = next;
+      return next;
+    });
+  }, []);
+
+  return { audioRef, enabled, activeSection, toggle, pause, resume, autoScroll, toggleAutoScroll };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -421,6 +428,19 @@ export default function Home() {
               aria-pressed={voice.enabled}
             >
               Voice: {voice.enabled ? "ON" : "OFF"}
+            </button>
+          </li>
+          <li>
+            <button
+              className={`autoscroll-toggle${voice.autoScroll ? " on" : ""}`}
+              onClick={voice.toggleAutoScroll}
+              aria-pressed={voice.autoScroll}
+              title="Auto-scroll with voice"
+            >
+              <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style={{ marginRight: 4, verticalAlign: "middle" }}>
+                <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Scroll: {voice.autoScroll ? "ON" : "OFF"}
             </button>
           </li>
           <li>
