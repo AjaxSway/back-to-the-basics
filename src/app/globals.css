@@ -259,7 +259,8 @@ section { padding: 120px 40px; }
 /* ANCHOR VISUAL SECTIONS */
 .anchor-visual-section {
   background: var(--bg-deep);
-  padding: 100px 40px;
+  padding: 140px 40px;
+  border-top: 1px solid rgba(202,144,61,0.06);
 }
 
 .anchor-visual-img {
