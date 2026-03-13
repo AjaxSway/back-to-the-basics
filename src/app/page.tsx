@@ -21,7 +21,7 @@ function useVoiceSystem(entered: boolean) {
   const unlockedRef = useRef(false);
   const autoScrollingRef = useRef(true); // auto-scroll mode (user can override by scrolling)
   const userScrolledRef = useRef(false);
-  const scrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrollTimerRef = useRef<number | null>(null);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -63,10 +63,33 @@ function useVoiceSystem(entered: boolean) {
       try {
         await audioRef.current.play();
         playedRef.current.add(sectionId);
-        // Smoothly scroll to this section when it starts playing
+        // Progressive scroll: glide through the section in sync with the voice
+        if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
         const el = document.getElementById(sectionId);
-        if (el && !userScrolledRef.current) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        const audio = audioRef.current;
+        if (el && audio) {
+          const tick = () => {
+            if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
+            if (userScrolledRef.current) {
+              scrollTimerRef.current = requestAnimationFrame(tick);
+              return;
+            }
+            const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+            const rect = el.getBoundingClientRect();
+            const sectionTop = window.scrollY + rect.top - 60; // offset for navbar
+            const sectionHeight = el.scrollHeight;
+            const viewHeight = window.innerHeight;
+            const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
+            const targetY = sectionTop + scrollRange * progress;
+            const currentY = window.scrollY;
+            // Ease toward target — move 5% of the remaining distance each frame
+            const newY = currentY + (targetY - currentY) * 0.05;
+            if (Math.abs(newY - currentY) > 0.5) {
+              window.scrollTo(0, newY);
+            }
+            scrollTimerRef.current = requestAnimationFrame(tick);
+          };
+          scrollTimerRef.current = requestAnimationFrame(tick);
         }
       } catch {
         unlockedRef.current = false;
@@ -108,7 +131,7 @@ function useVoiceSystem(entered: boolean) {
   }, [entered, enabled, playAndScroll]);
 
   const stop = useCallback(() => {
-    if (scrollTimerRef.current) clearInterval(scrollTimerRef.current);
+    if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;

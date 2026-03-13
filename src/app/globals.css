@@ -20,7 +20,7 @@
   --text-dim: #5a5245;
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 
 body {
   font-family: 'Montserrat', sans-serif;
