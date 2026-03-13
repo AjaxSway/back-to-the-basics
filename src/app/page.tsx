@@ -81,12 +81,7 @@ function useVoiceSystem(entered: boolean) {
             const viewHeight = window.innerHeight;
             const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
             const targetY = sectionTop + scrollRange * progress;
-            const currentY = window.scrollY;
-            // Ease toward target — move 20% of the remaining distance each frame
-            const newY = currentY + (targetY - currentY) * 0.2;
-            if (Math.abs(newY - currentY) > 0.5) {
-              window.scrollTo(0, newY);
-            }
+            window.scrollTo(0, targetY);
             scrollTimerRef.current = requestAnimationFrame(tick);
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
