@@ -53,8 +53,19 @@ function useVoiceSystem(entered: boolean) {
         interrupted = true;
         transitioningRef.current = false;
         if (audioRef.current && !audioRef.current.paused) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
+          // Fade out to prevent pop/click
+          const a = audioRef.current;
+          const fadeOut = () => {
+            if (a.volume > 0.05) {
+              a.volume = Math.max(0, a.volume - 0.1);
+              requestAnimationFrame(fadeOut);
+            } else {
+              a.volume = 0;
+              a.pause();
+              a.currentTime = 0;
+            }
+          };
+          fadeOut();
           currentRef.current = null;
           if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
         }
@@ -101,16 +112,28 @@ function useVoiceSystem(entered: boolean) {
       if (!SECTION_IDS.includes(sectionId)) return;
       if (!force && playedRef.current.has(sectionId)) return;
       if (audioRef.current) {
+        audioRef.current.volume = 0;
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
       if (!audioRef.current) return;
       audioRef.current.src = `/audio/${sectionId}.mp3`;
-      audioRef.current.playbackRate = 1.08;
+      audioRef.current.playbackRate = 1.0;
+      audioRef.current.volume = 0;
       currentRef.current = sectionId;
       setActiveSection(sectionId);
       try {
         await audioRef.current.play();
+        // Fade in to prevent pop/click
+        const fadeIn = () => {
+          if (audioRef.current && audioRef.current.volume < 0.95) {
+            audioRef.current.volume = Math.min(1, audioRef.current.volume + 0.05);
+            requestAnimationFrame(fadeIn);
+          } else if (audioRef.current) {
+            audioRef.current.volume = 1;
+          }
+        };
+        fadeIn();
         playedRef.current.add(sectionId);
         bootedRef.current = true;
         // Progressive scroll: glide through the section in sync with the voice
@@ -130,7 +153,11 @@ function useVoiceSystem(entered: boolean) {
             const sectionHeight = el.scrollHeight;
             const viewHeight = window.innerHeight;
             const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
-            const targetY = sectionTop + scrollRange * progress;
+            // Cap scroll to only cover 2 screens worth max per audio clip
+            // Long sections (founder/memorials) won't race through
+            const maxScroll = viewHeight * 2.5;
+            const cappedRange = Math.min(scrollRange, maxScroll);
+            const targetY = sectionTop + cappedRange * progress;
             window.scrollTo(0, targetY);
             scrollTimerRef.current = requestAnimationFrame(tick);
           };
@@ -192,6 +219,7 @@ function useVoiceSystem(entered: boolean) {
   const stop = useCallback(() => {
     if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
     if (audioRef.current) {
+      audioRef.current.volume = 0;
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
@@ -644,7 +672,7 @@ export default function Home() {
 
               {/* FOUNDER VIDEO */}
               <div className="founder-video-wrapper">
-                <video ref={founderVideoRef} controls playsInline preload="metadata">
+                <video ref={founderVideoRef} controls playsInline preload="metadata" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
                   <source src="/video/founder-video.mp4" type="video/mp4" />
                   <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
                   Your browser does not support the video tag.
