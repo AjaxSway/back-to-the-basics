@@ -23,6 +23,7 @@ function useVoiceSystem(entered: boolean) {
   const autoScrollRef = useRef(false);
   const userScrolledRef = useRef(false);
   const scrollTimerRef = useRef<number | null>(null);
+  const transitioningRef = useRef(false); // true during auto-advance gap between sections
 
   // Check localStorage on mount
   useEffect(() => {
@@ -106,7 +107,12 @@ function useVoiceSystem(entered: boolean) {
       const idx = SECTION_IDS.indexOf(finishedId);
       if (idx >= 0 && idx < SECTION_IDS.length - 1) {
         const nextId = SECTION_IDS[idx + 1];
-        setTimeout(() => playAndScroll(nextId, true), 1200);
+        // Block the observer from hijacking during the transition gap
+        transitioningRef.current = true;
+        setTimeout(() => {
+          transitioningRef.current = false;
+          playAndScroll(nextId, true);
+        }, 1200);
       }
     }
   };
@@ -176,6 +182,10 @@ function useVoiceSystem(entered: boolean) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (!unlockedRef.current) return;
+        // Don't hijack during auto-advance transition between sections
+        if (transitioningRef.current) return;
+        // Don't interrupt audio that's currently playing
+        if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) return;
         let best: IntersectionObserverEntry | null = null;
         for (const e of entries) {
           if (!e.isIntersecting) continue;
@@ -184,8 +194,6 @@ function useVoiceSystem(entered: boolean) {
         if (!best) return;
         const id = (best.target as HTMLElement).id;
         if (!id || id === currentRef.current) return;
-        // Skip if audio is currently playing (auto-advance handles transitions)
-        if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) return;
         playAndScroll(id, true);
       },
       { threshold: [0.4, 0.6] }
