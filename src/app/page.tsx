@@ -24,6 +24,7 @@ function useVoiceSystem(entered: boolean) {
   const userScrolledRef = useRef(false);
   const scrollTimerRef = useRef<number | null>(null);
   const transitioningRef = useRef(false); // true during auto-advance gap between sections
+  const playAndScrollRef = useRef<((id: string, force?: boolean) => Promise<void>) | null>(null);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -31,19 +32,46 @@ function useVoiceSystem(entered: boolean) {
     if (stored === "0") setEnabled(false);
   }, []);
 
-  // Detect manual user scroll — pause auto-scroll until voice catches up
+  // When user manually scrolls, stop current audio so the observer can pick up the new section
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-    const onWheel = () => {
+    const onScroll = () => {
       userScrolledRef.current = true;
+      // Cancel any pending auto-advance
+      transitioningRef.current = false;
+      // Stop current audio so observer can fire for the new section
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        currentRef.current = null;
+        if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
+      }
       clearTimeout(timeout);
-      timeout = setTimeout(() => { userScrolledRef.current = false; }, 3000);
+      timeout = setTimeout(() => {
+        userScrolledRef.current = false;
+        // After scroll settles, find and play the most visible section
+        if (!unlockedRef.current || !audioRef.current) return;
+        if (!audioRef.current.paused) return; // something already started
+        const sections = document.querySelectorAll("section[id]");
+        let bestId: string | null = null;
+        let bestRatio = 0;
+        sections.forEach((sec) => {
+          const r = sec.getBoundingClientRect();
+          const vh = window.innerHeight;
+          const visible = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+          const ratio = visible / Math.max(1, r.height);
+          if (ratio > bestRatio) { bestRatio = ratio; bestId = sec.id; }
+        });
+        if (bestId && bestRatio >= 0.3 && bestId !== currentRef.current) {
+          playAndScrollRef.current?.(bestId, true);
+        }
+      }, 800);
     };
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("touchmove", onWheel, { passive: true });
+    window.addEventListener("wheel", onScroll, { passive: true });
+    window.addEventListener("touchmove", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchmove", onWheel);
+      window.removeEventListener("wheel", onScroll);
+      window.removeEventListener("touchmove", onScroll);
       clearTimeout(timeout);
     };
   }, []);
@@ -95,6 +123,7 @@ function useVoiceSystem(entered: boolean) {
     },
     []
   );
+  playAndScrollRef.current = playAndScroll;
 
   // When audio ends, auto-advance to next section
   // Use a ref-based callback so this works even if audioRef is null on first render
