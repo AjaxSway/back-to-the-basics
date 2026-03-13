@@ -162,14 +162,12 @@ function useVoiceSystem(entered: boolean) {
     if (bestId && bestRatio >= 0.35) await playAndScroll(bestId, true);
   }, [enabled, stop, playAndScroll]);
 
-  // Also respond to manual scroll — if user scrolls to a new section, play it
+  // When user scrolls to a new section, read it aloud
   useEffect(() => {
     if (!enabled) return;
     const observer = new IntersectionObserver(
       (entries) => {
         if (!unlockedRef.current) return;
-        // Only trigger on manual scroll, not auto-scroll
-        if (!userScrolledRef.current) return;
         let best: IntersectionObserverEntry | null = null;
         for (const e of entries) {
           if (!e.isIntersecting) continue;
@@ -178,9 +176,11 @@ function useVoiceSystem(entered: boolean) {
         if (!best) return;
         const id = (best.target as HTMLElement).id;
         if (!id || id === currentRef.current) return;
+        // Skip if audio is currently playing (auto-advance handles transitions)
+        if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) return;
         playAndScroll(id, true);
       },
-      { threshold: [0.35, 0.5, 0.65] }
+      { threshold: [0.4, 0.6] }
     );
     document.querySelectorAll("section[id]").forEach((s) => observer.observe(s));
     return () => observer.disconnect();
