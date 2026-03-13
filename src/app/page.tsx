@@ -545,7 +545,7 @@ export default function Home() {
         <div className="content-mid reveal">
           <span className="section-label">Our Mission</span>
           <h2 className="section-title">Why We Exist</h2>
-          <p style={{ textAlign: "center", fontSize: "1.25rem", maxWidth: 720, margin: "0 auto 20px" }}>Back to the Basics Movement exists to restore clarity in a distracted world.</p>
+          <p style={{ textAlign: "center", fontSize: "1.25rem", maxWidth: 720, margin: "0 auto 20px" }}>Back to the Basics Movement exists to restore clarity in a&nbsp;distracted&nbsp;world.</p>
           <p style={{ textAlign: "center", fontSize: "1.25rem", maxWidth: 720, margin: "0 auto 20px" }}>We are not here to add noise. We are here to return to what matters.</p>
           <div className="gold-line" />
           <div className="mission-principles" style={{ textAlign: "center" }}>
@@ -614,7 +614,7 @@ export default function Home() {
       <section id="alanwatts" className={sc("alanwatts", "anchor-visual-section")}>
         <div className="content-mid reveal" style={{ textAlign: "center" }}>
           <img src="/images/alan_watts_reflection.png" alt="Alan Watts quote over golden sunrise and mountains" className="anchor-visual-img" />
-          <p style={{ fontSize: "1.3rem", color: "var(--text-bright)", maxWidth: 720, margin: "30px auto 0" }}>Back to the Basics is about waking up.</p>
+          <p style={{ fontSize: "2rem", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: "var(--text-bright)", maxWidth: 720, margin: "40px auto 0", letterSpacing: 1 }}>Back to the Basics is about waking&nbsp;up.</p>
         </div>
       </section>
 
@@ -634,13 +634,13 @@ export default function Home() {
 
             {/* George Bayze */}
             <div style={{ maxWidth: 720, margin: "0 auto 80px", textAlign: "center" }}>
-              <img src="/images/founder_lantern_stewardship.png" alt="The Heart Behind the Foundation - Lantern at sunset" className="anchor-visual-img" style={{ maxWidth: 720, marginBottom: 40 }} />
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2.6rem", color: "var(--text-bright)", fontWeight: 300, marginBottom: 8 }}>George Bayze</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--gold)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 30 }}>Vision Steward</p>
+              <img src="/images/founder_lantern_stewardship.png" alt="The Heart Behind the Foundation - Lantern at sunset" className="anchor-visual-img" style={{ maxWidth: 960, marginBottom: 50 }} />
+              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "3.2rem", color: "var(--text-bright)", fontWeight: 300, marginBottom: 12 }}>George Bayze</h3>
+              <p style={{ fontSize: "1.1rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 40 }}>Vision Steward</p>
 
               {/* FOUNDER VIDEO */}
               <div className="founder-video-wrapper">
-                <video ref={founderVideoRef} controls playsInline preload="metadata" poster="/images/founder_lantern_stewardship.png">
+                <video ref={founderVideoRef} controls playsInline preload="metadata">
                   <source src="/video/founder-video.mp4" type="video/mp4" />
                   <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
                   Your browser does not support the video tag.
