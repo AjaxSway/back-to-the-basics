@@ -588,7 +588,7 @@ export default function Home() {
           )}
           <span className="gate-sound-label">{gateAudioPlaying ? "Sound On" : "Better with Sound"}</span>
         </button>
-        <img src="/images/entry-seal.png" alt="Back to the Basics Movement" className="enter-logo" />
+        <div className="enter-crest" role="img" aria-label="Back to the Basics Movement Seal" />
         <button className="enter-btn" onClick={handleEnter}>Enter the Movement</button>
       </div>
     );

@@ -686,31 +686,30 @@ section.voice-reading::after {
 
 /* ENTRY GATE */
 .enter-gate {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  background: var(--bg-deep);
+  background: #000;
   cursor: pointer;
   padding: 40px 0;
   overflow: hidden;
-  background-image:
-    radial-gradient(ellipse at center, rgba(129,85,30,0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at center bottom, rgba(129,85,30,0.06) 0%, transparent 60%);
 }
 
-.enter-logo {
-  width: 80vw;
-  max-width: 900px;
-  max-height: 85vh;
-  object-fit: contain;
-  margin-bottom: 40px;
-  mask-image: radial-gradient(circle at center, black 30%, transparent 52%);
-  -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 52%);
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
+.enter-crest {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center,
+      rgba(0,0,0,0) 30%,
+      rgba(0,0,0,0.3) 50%,
+      rgba(0,0,0,0.7) 68%,
+      rgba(0,0,0,1) 85%),
+    url("/images/entry-seal.png") center center / contain no-repeat;
+  z-index: 0;
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
 
@@ -726,6 +725,8 @@ section.voice-reading::after {
 }
 
 .enter-btn {
+  position: relative;
+  z-index: 2;
   background: none;
   border: 1px solid var(--gold);
   color: var(--gold);
