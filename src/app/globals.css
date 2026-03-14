@@ -699,13 +699,26 @@ section.voice-reading::after {
   overflow: hidden;
 }
 
+/* Gold dust atmosphere — full bleed background, fades to black at edges */
+.enter-bg {
+  position: absolute;
+  inset: 0;
+  background: url("/images/entry-bg.png") center center / cover no-repeat;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 70% at center, black 30%, transparent 75%);
+  z-index: 0;
+  opacity: 0.7;
+  animation: sealReveal 2s ease-out;
+}
+
+/* Seal logo — sits on top, tightly masked to circle */
 .enter-crest {
   position: absolute;
   inset: 0;
-  background: url("/images/entry-seal.png") center center / 55% no-repeat;
-  -webkit-mask-image: radial-gradient(circle at center, black 25%, transparent 52%);
-  mask-image: radial-gradient(circle at center, black 25%, transparent 52%);
-  z-index: 0;
+  background: url("/images/entry-seal.png") center center / 50% no-repeat;
+  -webkit-mask-image: radial-gradient(circle at center, black 20%, transparent 40%);
+  mask-image: radial-gradient(circle at center, black 20%, transparent 40%);
+  z-index: 1;
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
 
