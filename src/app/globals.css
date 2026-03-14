@@ -5,14 +5,14 @@
 
 /* VOICE HIGHLIGHT — lights up current paragraph as voice reads */
 .voice-dim {
-  opacity: 0.3;
-  transition: opacity 0.5s ease;
+  opacity: 0.25;
+  transition: opacity 0.6s ease;
 }
 .voice-highlight {
   opacity: 1;
-  color: var(--text-bright) !important;
+  color: #f5d89a !important;
   transition: opacity 0.4s ease, color 0.4s ease;
-  text-shadow: 0 0 20px rgba(202,144,61,0.15);
+  text-shadow: 0 0 18px rgba(202,144,61,0.5), 0 0 40px rgba(202,144,61,0.25);
 }
 
 /* Prevent orphan words — no single word dangling alone on the last line */
