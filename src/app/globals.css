@@ -61,7 +61,7 @@ body {
 /* NAV */
 nav {
   position: fixed; top: 0; width: 100%; z-index: 1000;
-  padding: 14px 340px 14px 40px;
+  padding: 14px 40px;
   display: flex; justify-content: space-between; align-items: center;
   background: rgba(5,4,3,0.92);
   backdrop-filter: blur(20px);
@@ -114,7 +114,7 @@ nav.scrolled { padding: 10px 340px 10px 40px; background: rgba(5,4,3,0.97); }
 /* SITE CONTROLS — fixed right side */
 .site-controls {
   position: fixed;
-  top: 62px;
+  top: 56px;
   right: 16px;
   z-index: 999;
   display: flex;
