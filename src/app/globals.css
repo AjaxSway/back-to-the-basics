@@ -181,8 +181,8 @@ section { padding: 120px 40px; }
   width: 80vw;
   max-width: 800px;
   margin-bottom: 40px;
-  mask-image: radial-gradient(circle at center, black 25%, transparent 48%);
-  -webkit-mask-image: radial-gradient(circle at center, black 25%, transparent 48%);
+  -webkit-mask-image: radial-gradient(ellipse 50% 45% at center, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 45% at center, black 55%, transparent 100%);
   filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
