@@ -177,11 +177,11 @@ section { padding: 120px 40px; }
 @keyframes twinkle { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
 .hero-seal {
-  width: 100vw;
-  max-width: 1100px;
+  width: 80vw;
+  max-width: 800px;
   margin-bottom: 40px;
-  mask-image: radial-gradient(circle at center, black 30%, transparent 55%);
-  -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 55%);
+  mask-image: radial-gradient(circle at center, black 25%, transparent 48%);
+  -webkit-mask-image: radial-gradient(circle at center, black 25%, transparent 48%);
   filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
@@ -851,7 +851,7 @@ section.voice-reading::after {
 
 @media (max-width: 768px) {
   body { font-size: 16px; }
-  .hero-seal { width: 95vw; max-width: 500px; }
+  .hero-seal { width: 85vw; max-width: 420px; }
   .hero-title { font-size: 2rem; letter-spacing: 5px; }
   .pillars-descriptions { grid-template-columns: 1fr; gap: 30px; }
   .education-grid { grid-template-columns: 1fr; }
