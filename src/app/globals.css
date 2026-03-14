@@ -704,11 +704,12 @@ section.voice-reading::after {
   inset: 0;
   background:
     radial-gradient(circle at center,
-      rgba(0,0,0,0) 30%,
-      rgba(0,0,0,0.3) 50%,
-      rgba(0,0,0,0.7) 68%,
-      rgba(0,0,0,1) 85%),
-    url("/images/entry-seal.png") center center / contain no-repeat;
+      rgba(0,0,0,0) 20%,
+      rgba(0,0,0,0.4) 35%,
+      rgba(0,0,0,0.75) 45%,
+      rgba(0,0,0,0.95) 55%,
+      rgba(0,0,0,1) 62%),
+    url("/images/entry-seal.png") center center / 55% no-repeat;
   z-index: 0;
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
