@@ -736,8 +736,10 @@ section.voice-reading::after {
 .enter-btn {
   position: absolute;
   bottom: 18%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
   z-index: 2;
   background: none;
   border: 1px solid var(--gold);
