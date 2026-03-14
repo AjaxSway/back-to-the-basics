@@ -144,11 +144,23 @@ function useVoiceSystem(entered: boolean) {
         if (el && audio && autoScrollRef.current) {
           const sectionHeight = el.scrollHeight;
           const viewHeight = window.innerHeight;
-          // Long sections (founder, etc.) — just scroll to top, let user read at their own pace
           if (sectionHeight > viewHeight * 2.5) {
-            const rect = el.getBoundingClientRect();
-            const sectionTop = window.scrollY + rect.top - 60;
-            window.scrollTo({ top: sectionTop, behavior: "smooth" });
+            // Long sections (founder, etc.) — progressive scroll capped to top half
+            const tick = () => {
+              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
+              if (!autoScrollRef.current || userScrolledRef.current) {
+                scrollTimerRef.current = requestAnimationFrame(tick);
+                return;
+              }
+              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              const rect = el.getBoundingClientRect();
+              const sectionTop = window.scrollY + rect.top - 60;
+              const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
+              const targetY = sectionTop + scrollRange * progress;
+              window.scrollTo(0, targetY);
+              scrollTimerRef.current = requestAnimationFrame(tick);
+            };
+            scrollTimerRef.current = requestAnimationFrame(tick);
           } else {
             // Short/medium sections — glide through in sync with voice
             const tick = () => {
