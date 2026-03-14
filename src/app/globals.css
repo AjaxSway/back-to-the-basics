@@ -715,9 +715,9 @@ section.voice-reading::after {
 .enter-crest {
   position: absolute;
   inset: 0;
-  background: url("/images/entry-seal.png") center center / 45% no-repeat;
-  -webkit-mask-image: radial-gradient(ellipse 38% 32% at center, black 60%, transparent 100%);
-  mask-image: radial-gradient(ellipse 38% 32% at center, black 60%, transparent 100%);
+  background: url("/images/entry-seal.png") center 42% / 62% no-repeat;
+  -webkit-mask-image: radial-gradient(ellipse 50% 42% at center 42%, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 42% at center 42%, black 55%, transparent 100%);
   z-index: 1;
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
@@ -735,7 +735,7 @@ section.voice-reading::after {
 
 .enter-btn {
   position: absolute;
-  bottom: 8%;
+  bottom: 12%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
