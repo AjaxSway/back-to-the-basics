@@ -124,14 +124,14 @@ nav.scrolled { padding: 10px 340px 10px 40px; background: rgba(5,4,3,0.97); }
   backdrop-filter: blur(12px);
   padding: 6px 10px;
   border-radius: 24px;
-  border: 1px solid rgba(202,144,61,0.15);
+  border: 1px solid rgba(202,144,61,0.3);
 }
 
 /* VOICE TOGGLE */
 .voice-toggle {
-  background: rgba(20,18,15,0.9);
-  border: 1px solid rgba(202,144,61,0.4);
-  color: var(--text-muted);
+  background: rgba(30,26,20,0.95);
+  border: 1px solid rgba(202,144,61,0.6);
+  color: var(--text);
   font-family: 'Montserrat', sans-serif;
   font-size: 0.7rem;
   font-weight: 600;
@@ -831,9 +831,9 @@ section.voice-reading::after {
 
 /* AUTO-SCROLL TOGGLE */
 .autoscroll-toggle {
-  background: rgba(20,18,15,0.9);
-  border: 1px solid rgba(202,144,61,0.4);
-  color: var(--text-muted);
+  background: rgba(30,26,20,0.95);
+  border: 1px solid rgba(202,144,61,0.6);
+  color: var(--text);
   font-family: 'Montserrat', sans-serif;
   font-size: 0.7rem;
   font-weight: 600;
@@ -855,9 +855,9 @@ section.voice-reading::after {
 
 /* MUSIC TOGGLE */
 .music-toggle {
-  background: rgba(20,18,15,0.9);
-  border: 1px solid rgba(202,144,61,0.4);
-  color: var(--text-muted);
+  background: rgba(30,26,20,0.95);
+  border: 1px solid rgba(202,144,61,0.6);
+  color: var(--text);
   font-family: 'Montserrat', sans-serif;
   font-size: 0.7rem;
   font-weight: 600;
