@@ -3,6 +3,18 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* VOICE HIGHLIGHT — lights up current paragraph as voice reads */
+.voice-dim {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+.voice-highlight {
+  opacity: 1;
+  color: var(--text-bright) !important;
+  transition: opacity 0.4s ease, color 0.4s ease;
+  text-shadow: 0 0 20px rgba(202,144,61,0.15);
+}
+
 /* Prevent orphan words — no single word dangling alone on the last line */
 p, h1, h2, h3, h4, li, .memorial-text, .pillar-desc p, .perk-text, .testimonial-body {
   text-wrap: pretty;

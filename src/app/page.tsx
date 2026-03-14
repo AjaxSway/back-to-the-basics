@@ -26,6 +26,7 @@ function useVoiceSystem(entered: boolean) {
   const transitioningRef = useRef(false); // true during auto-advance gap between sections
   const playAndScrollRef = useRef<((id: string, force?: boolean) => Promise<void>) | null>(null);
   const bootedRef = useRef(false); // true after first section starts — blocks observer during startup
+  const highlightTimerRef = useRef<number | null>(null);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -167,6 +168,39 @@ function useVoiceSystem(entered: boolean) {
             scrollTimerRef.current = requestAnimationFrame(tick);
           }
         }
+        // Highlight text as voice reads — light up current paragraph, dim the rest
+        if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
+        if (el && audio) {
+          // Find all readable text elements in this section
+          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
+          if (textEls.length > 0) {
+            el.classList.add("voice-reading");
+            const hlTick = () => {
+              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                // Clean up highlights
+                el.classList.remove("voice-reading");
+                textEls.forEach(t => { t.classList.remove("voice-highlight"); t.classList.remove("voice-dim"); });
+                return;
+              }
+              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              const activeIdx = Math.min(Math.floor(progress * textEls.length), textEls.length - 1);
+              textEls.forEach((t, i) => {
+                if (i === activeIdx) {
+                  t.classList.add("voice-highlight");
+                  t.classList.remove("voice-dim");
+                } else if (i < activeIdx) {
+                  t.classList.remove("voice-highlight");
+                  t.classList.remove("voice-dim");
+                } else {
+                  t.classList.remove("voice-highlight");
+                  t.classList.add("voice-dim");
+                }
+              });
+              highlightTimerRef.current = requestAnimationFrame(hlTick);
+            };
+            highlightTimerRef.current = requestAnimationFrame(hlTick);
+          }
+        }
       } catch {
         unlockedRef.current = false;
         setActiveSection(null);
@@ -222,6 +256,11 @@ function useVoiceSystem(entered: boolean) {
 
   const stop = useCallback(() => {
     if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
+    if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
+    // Clean up all highlights
+    document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
+    document.querySelectorAll(".voice-highlight").forEach(el => el.classList.remove("voice-highlight"));
+    document.querySelectorAll(".voice-dim").forEach(el => el.classList.remove("voice-dim"));
     if (audioRef.current) {
       audioRef.current.volume = 0;
       audioRef.current.pause();
