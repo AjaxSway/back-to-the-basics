@@ -613,45 +613,43 @@ export default function Home() {
           <li><a href="#education" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9776;</span> Education</a></li>
           <li><a href="#voices" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9688;</span> Voices</a></li>
           <li><a href="#subscribe" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9993;</span> Subscribe</a></li>
-          <li>
-            <button
-              className={`voice-toggle${voice.enabled ? " on" : ""}`}
-              onClick={voice.toggle}
-              aria-pressed={voice.enabled}
-            >
-              Voice: {voice.enabled ? "ON" : "OFF"}
-            </button>
-          </li>
-          <li>
-            <button
-              className={`autoscroll-toggle${voice.autoScroll ? " on" : ""}`}
-              onClick={voice.toggleAutoScroll}
-              aria-pressed={voice.autoScroll}
-              title="Auto-scroll with voice"
-            >
-              <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style={{ marginRight: 4, verticalAlign: "middle" }}>
-                <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Scroll: {voice.autoScroll ? "ON" : "OFF"}
-            </button>
-          </li>
-          <li>
-            <button
-              className={`music-toggle${musicEnabled ? " on" : ""}`}
-              onClick={() => setMusicEnabled(!musicEnabled)}
-              aria-pressed={musicEnabled}
-              title="Toggle background music"
-            >
-              <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style={{ marginRight: 4, verticalAlign: "middle" }}>
-                <path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="1.8"/>
-                <circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="1.8"/>
-              </svg>
-              {musicEnabled ? "ON" : "OFF"}
-            </button>
-          </li>
         </ul>
       </nav>
+
+      {/* CONTROLS — fixed right side */}
+      <div className="site-controls">
+        <button
+          className={`voice-toggle${voice.enabled ? " on" : ""}`}
+          onClick={voice.toggle}
+          aria-pressed={voice.enabled}
+        >
+          Voice: {voice.enabled ? "ON" : "OFF"}
+        </button>
+        <button
+          className={`autoscroll-toggle${voice.autoScroll ? " on" : ""}`}
+          onClick={voice.toggleAutoScroll}
+          aria-pressed={voice.autoScroll}
+          title="Auto-scroll with voice"
+        >
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style={{ marginRight: 4, verticalAlign: "middle" }}>
+            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Scroll: {voice.autoScroll ? "ON" : "OFF"}
+        </button>
+        <button
+          className={`music-toggle${musicEnabled ? " on" : ""}`}
+          onClick={() => setMusicEnabled(!musicEnabled)}
+          aria-pressed={musicEnabled}
+          title="Toggle background music"
+        >
+          <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style={{ marginRight: 4, verticalAlign: "middle" }}>
+            <path d="M9 18V5l12-2v13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="6" cy="18" r="3" stroke="currentColor" strokeWidth="1.8"/>
+            <circle cx="18" cy="16" r="3" stroke="currentColor" strokeWidth="1.8"/>
+          </svg>
+          {musicEnabled ? "ON" : "OFF"}
+        </button>
+      </div>
 
       {/* 1. HERO */}
       <section className={sc("home", "hero")} id="home">

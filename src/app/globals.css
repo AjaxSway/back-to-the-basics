@@ -111,6 +111,17 @@ nav.scrolled { padding: 10px 40px; background: rgba(5,4,3,0.97); }
   text-shadow: 0 0 12px rgba(202,144,61,0.6), 0 0 24px rgba(202,144,61,0.3);
 }
 
+/* SITE CONTROLS — fixed right side */
+.site-controls {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 1001;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 /* VOICE TOGGLE */
 .voice-toggle {
   background: none;
