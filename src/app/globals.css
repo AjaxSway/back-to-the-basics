@@ -61,14 +61,14 @@ body {
 /* NAV */
 nav {
   position: fixed; top: 0; width: 100%; z-index: 1000;
-  padding: 14px 40px;
+  padding: 14px 340px 14px 40px;
   display: flex; justify-content: space-between; align-items: center;
   background: rgba(5,4,3,0.92);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(202,144,61,0.1);
   transition: all 0.4s ease;
 }
-nav.scrolled { padding: 10px 40px; background: rgba(5,4,3,0.97); }
+nav.scrolled { padding: 10px 340px 10px 40px; background: rgba(5,4,3,0.97); }
 
 .nav-brand {
   font-family: 'Cormorant Garamond', serif;
