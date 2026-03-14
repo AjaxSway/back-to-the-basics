@@ -964,6 +964,8 @@ export default function Home() {
                 <input type="hidden" name="_subject" value="New Story Submission — Back to the Basics" />
                 <input type="hidden" name="_captcha" value="false" />
                 <input type="hidden" name="_next" value="https://backtothebasicsmovement.com" />
+                {/* Honeypot — hidden from real users, catches bots */}
+                <input type="text" name="_honey" style={{ display: "none" }} tabIndex={-1} autoComplete="off" />
                 <div className="form-group">
                   <label>Your Name</label>
                   <input type="text" name="name" className="form-input" placeholder="How you would like to be identified" required />
@@ -1040,24 +1042,31 @@ export default function Home() {
           ) : (
             <form
               className="signup-form"
-              action="https://formsubmit.co/contact@backtothebasicsmovement.com"
-              method="POST"
               onSubmit={async (e) => {
                 e.preventDefault();
                 const form = e.currentTarget;
-                const btn = form.querySelector("button") as HTMLButtonElement;
+                const btn = form.querySelector("button[type=submit]") as HTMLButtonElement;
+                const emailInput = form.querySelector("input[name=email]") as HTMLInputElement;
+                const honeypot = (form.querySelector("input[name=website]") as HTMLInputElement)?.value;
                 btn.textContent = "JOINING...";
                 btn.disabled = true;
                 try {
-                  const res = await fetch(form.action, { method: "POST", body: new FormData(form), headers: { Accept: "application/json" } });
-                  if (res.ok) setNewsletterSubmitted(true);
-                  else { btn.textContent = "ERROR"; setTimeout(() => { btn.textContent = "Join"; btn.disabled = false; }, 3000); }
-                } catch { btn.textContent = "ERROR"; setTimeout(() => { btn.textContent = "Join"; btn.disabled = false; }, 3000); }
+                  const res = await fetch("/api/subscribe", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: emailInput.value, honeypot }),
+                  });
+                  if (res.ok) { setNewsletterSubmitted(true); }
+                  else {
+                    const data = await res.json().catch(() => ({}));
+                    btn.textContent = data.error || "Something went wrong";
+                    setTimeout(() => { btn.textContent = "Join"; btn.disabled = false; }, 3000);
+                  }
+                } catch { btn.textContent = "Connection error — try again"; setTimeout(() => { btn.textContent = "Join"; btn.disabled = false; }, 3000); }
               }}
             >
-              <input type="hidden" name="_subject" value="New Subscriber — Back to the Basics" />
-              <input type="hidden" name="_captcha" value="false" />
-              <input type="hidden" name="_next" value="https://backtothebasicsmovement.com" />
+              {/* Honeypot — hidden from real users, catches bots */}
+              <input type="text" name="website" style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }} tabIndex={-1} autoComplete="off" />
               <input type="email" name="email" placeholder="Your email address" required />
               <button type="submit">Join</button>
             </form>
@@ -1096,7 +1105,13 @@ export default function Home() {
               <span className="footer-email"><a href="mailto:admin@backtothebasicsmovement.com">admin@backtothebasicsmovement.com</a></span>
               <div style={{ marginTop: 20 }}>
                 <h4 style={{ fontSize: "0.75rem", color: "var(--gold-dim)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>Follow</h4>
-                <a href="https://www.tiktok.com/@george.back2basics" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>TikTok</a>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <a href="https://www.facebook.com/backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Facebook</a>
+                  <a href="https://www.instagram.com/backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Instagram</a>
+                  <a href="https://x.com/backtobasics_mv" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>X</a>
+                  <a href="https://www.youtube.com/@backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>YouTube</a>
+                  <a href="https://www.tiktok.com/@george.back2basics" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>TikTok</a>
+                </div>
               </div>
             </div>
           </div>
