@@ -4,12 +4,13 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* VOICE HIGHLIGHT — lights up current paragraph as voice reads */
-.vw {
-  transition: color 0.15s ease, opacity 0.15s ease, text-shadow 0.15s ease;
+.vw, p.voice-dim, p.voice-highlight, h2.voice-dim, h2.voice-highlight,
+h3.voice-dim, h3.voice-highlight, h4.voice-dim, h4.voice-highlight,
+.memorial-text.voice-dim, .memorial-text.voice-highlight {
+  transition: color 0.3s ease, opacity 0.3s ease, text-shadow 0.3s ease;
 }
 .voice-dim {
-  opacity: 0.3;
-  color: inherit;
+  opacity: 0.25;
 }
 .voice-highlight {
   opacity: 1;
@@ -872,6 +873,7 @@ section.voice-reading::after {
   .section-title { font-size: 2.4rem; }
   .memorial-person { padding: 30px; }
   .anchor-section { padding: 30px; }
+  .anchor-visual-section { padding: 70px 24px; }
   .memorial-photo {
     float: none; width: 100%; max-width: 300px;
     margin: 0 auto 20px; display: block;

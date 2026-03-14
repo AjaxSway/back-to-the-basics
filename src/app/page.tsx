@@ -142,85 +142,118 @@ function useVoiceSystem(entered: boolean) {
         const el = document.getElementById(sectionId);
         const audio = audioRef.current;
         if (el && audio && autoScrollRef.current) {
-          const sectionHeight = el.scrollHeight;
-          const viewHeight = window.innerHeight;
-          const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
-          const initRect = el.getBoundingClientRect();
-          const anchorTop = window.scrollY + initRect.top - 60;
           let currentY = window.scrollY;
-          const ease = 0.04; // lower = smoother glide
           const tick = () => {
             if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
             if (!autoScrollRef.current || userScrolledRef.current) {
               scrollTimerRef.current = requestAnimationFrame(tick);
               return;
             }
+            // Recalculate position each frame to handle layout shifts from image loading
+            const rect = el.getBoundingClientRect();
+            const anchorTop = window.scrollY + rect.top - 60;
+            const sectionHeight = el.scrollHeight;
+            const viewHeight = window.innerHeight;
+            const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
             const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
             const targetY = anchorTop + scrollRange * progress;
-            // Lerp toward target for buttery smooth motion
-            currentY += (targetY - currentY) * ease;
+            // Lerp toward target — higher ease for responsiveness
+            currentY += (targetY - currentY) * 0.06;
             window.scrollTo(0, Math.round(currentY));
             scrollTimerRef.current = requestAnimationFrame(tick);
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Highlight words as voice reads — wrap every word in a span, light up word-by-word
+        // Highlight text as voice reads
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
         if (el && audio) {
           const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
-          // Wrap each text node's words in spans (only once)
-          const allWordSpans: HTMLSpanElement[] = [];
-          textEls.forEach(t => {
-            if (t.querySelector(".vw")) {
-              // Already wrapped — collect existing spans
-              allWordSpans.push(...Array.from(t.querySelectorAll(".vw")) as HTMLSpanElement[]);
-              return;
-            }
-            const walker = document.createTreeWalker(t, NodeFilter.SHOW_TEXT, null);
-            const textNodes: Text[] = [];
-            let node: Text | null;
-            while ((node = walker.nextNode() as Text | null)) textNodes.push(node);
-            textNodes.forEach(tn => {
-              const words = tn.textContent?.split(/(\s+)/) || [];
-              const frag = document.createDocumentFragment();
-              words.forEach(w => {
-                if (/^\s+$/.test(w) || w === "") {
-                  frag.appendChild(document.createTextNode(w));
-                } else {
-                  const span = document.createElement("span");
-                  span.className = "vw";
-                  span.textContent = w;
-                  frag.appendChild(span);
-                  allWordSpans.push(span);
-                }
-              });
-              tn.parentNode?.replaceChild(frag, tn);
-            });
-          });
-          if (allWordSpans.length > 0) {
-            el.classList.add("voice-reading");
-            // Dim all words initially
-            allWordSpans.forEach(s => s.classList.add("voice-dim"));
-            const hlTick = () => {
-              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                el.classList.remove("voice-reading");
-                allWordSpans.forEach(s => { s.classList.remove("voice-highlight"); s.classList.remove("voice-dim"); });
+          // Count total words to decide strategy
+          const totalWords = textEls.reduce((sum, t) => sum + (t.textContent?.split(/\s+/).filter(Boolean).length || 0), 0);
+          const useWordLevel = totalWords <= 350;
+
+          if (useWordLevel) {
+            // SHORT SECTIONS: word-by-word highlight
+            const allWordSpans: HTMLSpanElement[] = [];
+            textEls.forEach(t => {
+              if (t.querySelector(".vw")) {
+                allWordSpans.push(...Array.from(t.querySelectorAll(".vw")) as HTMLSpanElement[]);
                 return;
               }
-              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const activeIdx = Math.min(Math.floor(progress * allWordSpans.length), allWordSpans.length - 1);
-              allWordSpans.forEach((s, i) => {
-                if (i <= activeIdx) {
-                  s.classList.add("voice-highlight");
-                  s.classList.remove("voice-dim");
-                } else {
-                  s.classList.remove("voice-highlight");
-                  s.classList.add("voice-dim");
-                }
+              const walker = document.createTreeWalker(t, NodeFilter.SHOW_TEXT, null);
+              const textNodes: Text[] = [];
+              let nd: Text | null;
+              while ((nd = walker.nextNode() as Text | null)) textNodes.push(nd);
+              textNodes.forEach(tn => {
+                const words = tn.textContent?.split(/(\s+)/) || [];
+                const frag = document.createDocumentFragment();
+                words.forEach(w => {
+                  if (/^\s+$/.test(w) || w === "") {
+                    frag.appendChild(document.createTextNode(w));
+                  } else {
+                    const span = document.createElement("span");
+                    span.className = "vw";
+                    span.textContent = w;
+                    frag.appendChild(span);
+                    allWordSpans.push(span);
+                  }
+                });
+                tn.parentNode?.replaceChild(frag, tn);
               });
+            });
+            if (allWordSpans.length > 0) {
+              el.classList.add("voice-reading");
+              allWordSpans.forEach(s => s.classList.add("voice-dim"));
+              const hlTick = () => {
+                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                  el.classList.remove("voice-reading");
+                  allWordSpans.forEach(s => { s.classList.remove("voice-highlight"); s.classList.remove("voice-dim"); });
+                  return;
+                }
+                const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+                const activeIdx = Math.min(Math.floor(progress * allWordSpans.length), allWordSpans.length - 1);
+                allWordSpans.forEach((s, i) => {
+                  if (i <= activeIdx) {
+                    s.classList.add("voice-highlight");
+                    s.classList.remove("voice-dim");
+                  } else {
+                    s.classList.remove("voice-highlight");
+                    s.classList.add("voice-dim");
+                  }
+                });
+                highlightTimerRef.current = requestAnimationFrame(hlTick);
+              };
               highlightTimerRef.current = requestAnimationFrame(hlTick);
-            };
-            highlightTimerRef.current = requestAnimationFrame(hlTick);
+            }
+          } else {
+            // LONG SECTIONS: paragraph-by-paragraph highlight
+            if (textEls.length > 0) {
+              el.classList.add("voice-reading");
+              textEls.forEach(t => t.classList.add("voice-dim"));
+              const hlTick = () => {
+                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                  el.classList.remove("voice-reading");
+                  textEls.forEach(t => { t.classList.remove("voice-highlight"); t.classList.remove("voice-dim"); });
+                  return;
+                }
+                const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+                const activeIdx = Math.min(Math.floor(progress * textEls.length), textEls.length - 1);
+                textEls.forEach((t, i) => {
+                  if (i === activeIdx) {
+                    t.classList.add("voice-highlight");
+                    t.classList.remove("voice-dim");
+                  } else if (i < activeIdx) {
+                    t.classList.remove("voice-highlight");
+                    t.classList.remove("voice-dim");
+                  } else {
+                    t.classList.remove("voice-highlight");
+                    t.classList.add("voice-dim");
+                  }
+                });
+                highlightTimerRef.current = requestAnimationFrame(hlTick);
+              };
+              highlightTimerRef.current = requestAnimationFrame(hlTick);
+            }
           }
         }
       } catch {
@@ -452,9 +485,9 @@ function useAmbientMusic(enabled: boolean) {
 function useScrollReveal(entered: boolean) {
   useEffect(() => {
     if (!entered) return;
-    // Small delay to ensure DOM has rendered
+    let observer: IntersectionObserver | null = null;
     const timer = setTimeout(() => {
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) entry.target.classList.add("active");
@@ -462,10 +495,9 @@ function useScrollReveal(entered: boolean) {
         },
         { threshold: 0.1 }
       );
-      document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
-      return () => observer.disconnect();
+      document.querySelectorAll(".reveal").forEach((el) => observer!.observe(el));
     }, 100);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); observer?.disconnect(); };
   }, [entered]);
 }
 
@@ -532,14 +564,14 @@ export default function Home() {
       video.removeEventListener("pause", onStop);
       video.removeEventListener("ended", onStop);
     };
-  });
+  }, [musicEnabled, voice]);
 
   if (!entered) {
     return (
       <div className="enter-gate">
         <button
           className={`gate-sound-control${gateAudioPlaying ? " on" : ""}`}
-          onClick={() => setGateAudioPlaying(true)}
+          onClick={() => { setGateAudioPlaying(true); setMusicEnabled(true); }}
           aria-label="Enable sound"
         >
           {gateAudioPlaying ? (
@@ -782,15 +814,15 @@ export default function Home() {
               <p style={{ fontSize: "0.85rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 30, textAlign: "center" }}>The Why</p>
               <div style={{ display: "flex", gap: 30, justifyContent: "center", flexWrap: "wrap", marginBottom: 30 }}>
                 <div style={{ textAlign: "center", maxWidth: 250 }}>
-                  <img src="/images/founder-michele-bayze.jpg" alt="Michele Bayze" style={{ width: 250, borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                  <img src="/images/founder-michele-bayze.jpg" alt="Michele Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
                   <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Michele Bayze</p>
                 </div>
                 <div style={{ textAlign: "center", maxWidth: 250 }}>
-                  <img src="/images/founder-alexis-bayze.jpg" alt="Alexis Bayze" style={{ width: 250, borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                  <img src="/images/founder-alexis-bayze.jpg" alt="Alexis Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
                   <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Alexis Bayze</p>
                 </div>
                 <div style={{ textAlign: "center", maxWidth: 250 }}>
-                  <img src="/images/founder-emma-bayze.jpg" alt="Emma Bayze" style={{ width: 250, borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                  <img src="/images/founder-emma-bayze.jpg" alt="Emma Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
                   <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Emma Bayze</p>
                 </div>
               </div>
