@@ -19,8 +19,8 @@ function useVoiceSystem(entered: boolean) {
   const playedRef = useRef(new Set<string>());
   const currentRef = useRef<string | null>(null);
   const unlockedRef = useRef(false);
-  const [autoScroll, setAutoScroll] = useState(false); // off by default — user opts in
-  const autoScrollRef = useRef(false);
+  const [autoScroll, setAutoScroll] = useState(true); // on by default — full experience
+  const autoScrollRef = useRef(true);
   const userScrolledRef = useRef(false);
   const scrollTimerRef = useRef<number | null>(null);
   const transitioningRef = useRef(false); // true during auto-advance gap between sections
