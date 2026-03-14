@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://backtothebasicsmovement.com"),
   title: "Back to the Basics Movement | Guarded · Grounded · Grateful",
   description:
     "A personal development and education movement rooted in discipline, truth, gratitude, and shared testimony. Restoring clarity in a distracted world.",
