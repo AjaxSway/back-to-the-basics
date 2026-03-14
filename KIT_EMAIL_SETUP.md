@@ -149,13 +149,48 @@ Back to the Basics Movement
 
 ---
 
+## System Architecture
+
+```
+Visitor enters email on website
+        ↓
+  Website subscribe form
+        ↓
+  POST /api/subscribe (server-side)
+        ↓
+  Kit API: create/upsert subscriber
+        ↓
+  Subscriber added to Kit form
+        ↓
+  Kit automation triggered
+        ↓
+  4-email welcome sequence begins
+        ↓
+  Subscriber receives emails over 6 days
+```
+
+**Contact/Story form** uses a separate path:
+```
+Visitor submits story
+        ↓
+  FormSubmit.co
+        ↓
+  contact@backtothebasicsmovement.com
+```
+
 ## Kit Setup Steps (after account creation)
 1. Settings → Sender: "Back to the Basics Movement" / contact@backtothebasicsmovement.com
 2. Create Form → "Join the Movement" (minimal, email-only)
-3. Create Sequence → "Welcome Series" (4 emails, delays: immediate, +2 days, +2 days, +3 days)
-4. Create Broadcast template → "Sunday Foundation Letter"
-5. Grab Form ID → Update website subscribe form
-6. Set up custom domain for email links (optional)
+3. Copy Form ID from the URL
+4. Copy API Key from Settings → Developer
+5. Create Sequence → "Welcome Series" (4 emails, delays: immediate, +1 day, +2 days, +3 days)
+6. Create Automation: trigger = "Subscribes to form: Join the Movement" → action = "Add to sequence: Welcome Series"
+7. Create Broadcast template → "Sunday Foundation Letter"
+8. Add env vars to Vercel: `KIT_API_KEY`, `KIT_FORM_ID`
+9. Redeploy on Vercel
+10. Test with your own email
+11. Set up custom domain for email links (optional)
 
-## Website Integration
-Replace current FormSubmit subscribe form with Kit JavaScript form embed or direct API POST.
+## Website Integration (COMPLETE)
+The subscribe form now submits to `/api/subscribe` which calls the Kit API server-side.
+No client-side Kit widgets or scripts are used. All secrets stay on the server.
