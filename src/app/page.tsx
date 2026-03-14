@@ -1048,14 +1048,30 @@ export default function Home() {
                 btn.textContent = "JOINING...";
                 btn.disabled = true;
                 try {
+                  // Try server-side Kit integration first
                   const res = await fetch("/api/subscribe", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email: emailInput.value, honeypot }),
                   });
-                  if (res.ok) { setNewsletterSubmitted(true); }
-                  else {
-                    const data = await res.json().catch(() => ({}));
+                  const data = await res.json().catch(() => ({ ok: false }));
+                  if (data.ok && data.fallback) {
+                    // Kit not configured — send directly via FormSubmit (browser-side, proven working)
+                    const fd = new FormData();
+                    fd.append("email", emailInput.value);
+                    fd.append("_subject", "Back to the Basics Movement — New Subscriber");
+                    fd.append("_autoresponse", "Welcome to the Back to the Basics Movement.\n\nThank you for joining. This movement exists for a simple reason: to return to the principles that build strong lives.\n\nIn a world filled with noise and distraction, Back to the Basics is a reminder that strength is built through a few timeless principles practiced daily.\n\nYou will receive updates, reflections, and practical insights designed to challenge your thinking and strengthen your foundation.\n\nStrength spreads when it is shared.\n\nGuarded. Grounded. Grateful.\nBack to the Basics Movement\nbacktothebasicsmovement.com");
+                    fd.append("_template", "table");
+                    fd.append("_captcha", "false");
+                    await fetch("https://formsubmit.co/ajax/contact@backtothebasicsmovement.com", {
+                      method: "POST",
+                      headers: { Accept: "application/json" },
+                      body: fd,
+                    });
+                    setNewsletterSubmitted(true);
+                  } else if (data.ok) {
+                    setNewsletterSubmitted(true);
+                  } else {
                     btn.textContent = data.error || "Something went wrong";
                     setTimeout(() => { btn.textContent = "Join"; btn.disabled = false; }, 3000);
                   }

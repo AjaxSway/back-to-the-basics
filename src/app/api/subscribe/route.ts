@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
 
     // Bot protection — honeypot field should be empty
     if (honeypot) {
-      return NextResponse.json({ ok: true }); // silent success for bots
+      return NextResponse.json({ ok: true });
     }
 
     // Validate email
@@ -62,35 +62,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // FALLBACK PATH: Formspree — already activated for this project
-    // Form ID mvgkqbpn is confirmed working for newsletter signups
-    const FORMSPREE_ID = "mvgkqbpn";
-
-    const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({
-        email: sanitizedEmail,
-        name: sanitizedName || "New Subscriber",
-        _subject: `New B2TB Subscriber: ${sanitizedEmail}`,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[Subscribe] Formspree failed:", res.status, errText);
-      // Even if Formspree fails, accept the subscription gracefully
-      // The visitor should see success — we log the error server-side
-      console.log("[Subscribe] Accepting subscriber despite Formspree error:", sanitizedEmail);
-    }
-
-    return NextResponse.json({ ok: true });
+    // FALLBACK: No Kit configured — tell frontend to use direct FormSubmit
+    return NextResponse.json({ ok: true, fallback: true, email: sanitizedEmail, name: sanitizedName });
   } catch (err) {
     console.error("[Subscribe] Unexpected error:", err);
-    // Accept the subscription gracefully even on unexpected errors
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, fallback: true });
   }
 }
