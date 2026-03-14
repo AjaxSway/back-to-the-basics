@@ -711,13 +711,13 @@ section.voice-reading::after {
   animation: sealReveal 2s ease-out;
 }
 
-/* Seal logo — sits on top, tightly masked to ellipse matching image aspect */
+/* Seal logo — clean circular seal, masked to hide white background corners */
 .enter-crest {
   position: absolute;
   inset: 0;
-  background: url("/images/entry-seal.png") center center / 50% no-repeat;
-  -webkit-mask-image: radial-gradient(ellipse 42% 34% at center, black 50%, transparent 100%);
-  mask-image: radial-gradient(ellipse 42% 34% at center, black 50%, transparent 100%);
+  background: url("/images/entry-seal.png") center center / 45% no-repeat;
+  -webkit-mask-image: radial-gradient(ellipse 38% 32% at center, black 60%, transparent 100%);
+  mask-image: radial-gradient(ellipse 38% 32% at center, black 60%, transparent 100%);
   z-index: 1;
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
