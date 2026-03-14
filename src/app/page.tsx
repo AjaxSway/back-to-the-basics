@@ -357,7 +357,7 @@ function useAmbientMusic(enabled: boolean) {
   const playingRef = useRef(false);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
-  const targetVol = 0.03;
+  const targetVol = 0.012;
   const fadeDuration = 3;
 
   useEffect(() => {
