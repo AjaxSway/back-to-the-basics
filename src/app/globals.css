@@ -702,13 +702,13 @@ section.voice-reading::after {
 }
 
 .enter-logo {
-  width: 98vw;
-  max-width: 1400px;
+  width: 80vw;
+  max-width: 900px;
   max-height: 85vh;
   object-fit: contain;
   margin-bottom: 40px;
-  mask-image: radial-gradient(ellipse 80% 75% at center, black 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 60%, transparent 80%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 75% at center, black 20%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.2) 60%, transparent 80%);
+  mask-image: radial-gradient(circle at center, black 28%, transparent 50%);
+  -webkit-mask-image: radial-gradient(circle at center, black 28%, transparent 50%);
   filter: drop-shadow(0 0 40px rgba(202,144,61,0.3)) drop-shadow(0 0 80px rgba(129,85,30,0.2));
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
