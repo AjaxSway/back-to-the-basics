@@ -702,14 +702,9 @@ section.voice-reading::after {
 .enter-crest {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at center,
-      rgba(0,0,0,0) 20%,
-      rgba(0,0,0,0.4) 35%,
-      rgba(0,0,0,0.75) 45%,
-      rgba(0,0,0,0.95) 55%,
-      rgba(0,0,0,1) 62%),
-    url("/images/entry-seal.png") center center / 55% no-repeat;
+  background: url("/images/entry-seal.png") center center / 55% no-repeat;
+  -webkit-mask-image: radial-gradient(circle at center, black 25%, transparent 52%);
+  mask-image: radial-gradient(circle at center, black 25%, transparent 52%);
   z-index: 0;
   animation: sealReveal 2s ease-out, sealPulse 4s ease-in-out infinite 2s;
 }
