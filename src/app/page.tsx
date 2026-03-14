@@ -137,48 +137,32 @@ function useVoiceSystem(entered: boolean) {
         fadeIn();
         playedRef.current.add(sectionId);
         bootedRef.current = true;
-        // Progressive scroll: glide through the section in sync with the voice
+        // Progressive scroll: smooth glide through section in sync with voice
         if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
         const el = document.getElementById(sectionId);
         const audio = audioRef.current;
         if (el && audio && autoScrollRef.current) {
           const sectionHeight = el.scrollHeight;
           const viewHeight = window.innerHeight;
-          if (sectionHeight > viewHeight * 2.5) {
-            // Long sections (founder, etc.) — progressive scroll capped to top half
-            const tick = () => {
-              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
-              if (!autoScrollRef.current || userScrolledRef.current) {
-                scrollTimerRef.current = requestAnimationFrame(tick);
-                return;
-              }
-              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const rect = el.getBoundingClientRect();
-              const sectionTop = window.scrollY + rect.top - 60;
-              const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
-              const targetY = sectionTop + scrollRange * progress;
-              window.scrollTo(0, targetY);
+          const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
+          const initRect = el.getBoundingClientRect();
+          const anchorTop = window.scrollY + initRect.top - 60;
+          let currentY = window.scrollY;
+          const ease = 0.04; // lower = smoother glide
+          const tick = () => {
+            if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
+            if (!autoScrollRef.current || userScrolledRef.current) {
               scrollTimerRef.current = requestAnimationFrame(tick);
-            };
+              return;
+            }
+            const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+            const targetY = anchorTop + scrollRange * progress;
+            // Lerp toward target for buttery smooth motion
+            currentY += (targetY - currentY) * ease;
+            window.scrollTo(0, Math.round(currentY));
             scrollTimerRef.current = requestAnimationFrame(tick);
-          } else {
-            // Short/medium sections — glide through in sync with voice
-            const tick = () => {
-              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
-              if (!autoScrollRef.current || userScrolledRef.current) {
-                scrollTimerRef.current = requestAnimationFrame(tick);
-                return;
-              }
-              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const rect = el.getBoundingClientRect();
-              const sectionTop = window.scrollY + rect.top - 60;
-              const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
-              const targetY = sectionTop + scrollRange * progress;
-              window.scrollTo(0, targetY);
-              scrollTimerRef.current = requestAnimationFrame(tick);
-            };
-            scrollTimerRef.current = requestAnimationFrame(tick);
-          }
+          };
+          scrollTimerRef.current = requestAnimationFrame(tick);
         }
         // Highlight words as voice reads — wrap every word in a span, light up word-by-word
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
