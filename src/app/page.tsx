@@ -769,7 +769,7 @@ export default function Home() {
 
               {/* FOUNDER VIDEO */}
               <div className="founder-video-wrapper">
-                <video ref={founderVideoRef} controls playsInline preload="metadata" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
+                <video ref={founderVideoRef} controls playsInline autoPlay muted preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
                   <source src="/video/founder-video.mp4" type="video/mp4" />
                   <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
                   Your browser does not support the video tag.
