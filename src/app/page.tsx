@@ -912,7 +912,7 @@ export default function Home() {
               </div>
             ) : (
               <form
-                action="https://formspree.io/f/xpzvqkgd"
+                action="https://formsubmit.co/contact@backtothebasicsmovement.com"
                 method="POST"
                 style={{ maxWidth: 600, margin: "0 auto" }}
                 onSubmit={async (e) => {
@@ -929,6 +929,8 @@ export default function Home() {
                 }}
               >
                 <input type="hidden" name="_subject" value="New Story Submission — Back to the Basics" />
+                <input type="hidden" name="_captcha" value="false" />
+                <input type="hidden" name="_next" value="https://backtothebasicsmovement.com" />
                 <div className="form-group">
                   <label>Your Name</label>
                   <input type="text" name="name" className="form-input" placeholder="How you would like to be identified" required />
@@ -1005,7 +1007,7 @@ export default function Home() {
           ) : (
             <form
               className="signup-form"
-              action="https://formspree.io/f/mvgkqbpn"
+              action="https://formsubmit.co/contact@backtothebasicsmovement.com"
               method="POST"
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -1020,6 +1022,9 @@ export default function Home() {
                 } catch { btn.textContent = "ERROR"; setTimeout(() => { btn.textContent = "Join"; btn.disabled = false; }, 3000); }
               }}
             >
+              <input type="hidden" name="_subject" value="New Subscriber — Back to the Basics" />
+              <input type="hidden" name="_captcha" value="false" />
+              <input type="hidden" name="_next" value="https://backtothebasicsmovement.com" />
               <input type="email" name="email" placeholder="Your email address" required />
               <button type="submit">Join</button>
             </form>
@@ -1052,11 +1057,10 @@ export default function Home() {
             </div>
             <div className="footer-col">
               <h4>Contact</h4>
-              <span className="footer-email"><a href="mailto:info@backtothebasicsmovement.com">info@backtothebasicsmovement.com</a></span>
+              <span className="footer-email"><a href="mailto:contact@backtothebasicsmovement.com">contact@backtothebasicsmovement.com</a></span>
               <span className="footer-email"><a href="mailto:support@backtothebasicsmovement.com">support@backtothebasicsmovement.com</a></span>
-              <span className="footer-email"><a href="mailto:press@backtothebasicsmovement.com">press@backtothebasicsmovement.com</a></span>
-              <span className="footer-email"><a href="mailto:finance@backtothebasicsmovement.com">finance@backtothebasicsmovement.com</a></span>
-              <span className="footer-email"><a href="mailto:leadership@backtothebasicsmovement.com">leadership@backtothebasicsmovement.com</a></span>
+              <span className="footer-email"><a href="mailto:media@backtothebasicsmovement.com">media@backtothebasicsmovement.com</a></span>
+              <span className="footer-email"><a href="mailto:admin@backtothebasicsmovement.com">admin@backtothebasicsmovement.com</a></span>
               <div style={{ marginTop: 20 }}>
                 <h4 style={{ fontSize: "0.75rem", color: "var(--gold-dim)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>Follow</h4>
                 <a href="https://www.tiktok.com/@george.back2basics" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>TikTok</a>
