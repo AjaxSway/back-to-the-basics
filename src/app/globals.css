@@ -4,15 +4,17 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* VOICE HIGHLIGHT — lights up current paragraph as voice reads */
+.vw {
+  transition: color 0.15s ease, opacity 0.15s ease, text-shadow 0.15s ease;
+}
 .voice-dim {
-  opacity: 0.25;
-  transition: opacity 0.6s ease;
+  opacity: 0.3;
+  color: inherit;
 }
 .voice-highlight {
   opacity: 1;
   color: #f5d89a !important;
-  transition: opacity 0.4s ease, color 0.4s ease;
-  text-shadow: 0 0 18px rgba(202,144,61,0.5), 0 0 40px rgba(202,144,61,0.25);
+  text-shadow: 0 0 12px rgba(202,144,61,0.6), 0 0 30px rgba(202,144,61,0.3);
 }
 
 /* Prevent orphan words — no single word dangling alone on the last line */

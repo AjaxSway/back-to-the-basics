@@ -168,32 +168,58 @@ function useVoiceSystem(entered: boolean) {
             scrollTimerRef.current = requestAnimationFrame(tick);
           }
         }
-        // Highlight text as voice reads — light up current paragraph, dim the rest
+        // Highlight words as voice reads — wrap every word in a span, light up word-by-word
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
         if (el && audio) {
-          // Find all readable text elements in this section
           const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
-          if (textEls.length > 0) {
+          // Wrap each text node's words in spans (only once)
+          const allWordSpans: HTMLSpanElement[] = [];
+          textEls.forEach(t => {
+            if (t.querySelector(".vw")) {
+              // Already wrapped — collect existing spans
+              allWordSpans.push(...Array.from(t.querySelectorAll(".vw")) as HTMLSpanElement[]);
+              return;
+            }
+            const walker = document.createTreeWalker(t, NodeFilter.SHOW_TEXT, null);
+            const textNodes: Text[] = [];
+            let node: Text | null;
+            while ((node = walker.nextNode() as Text | null)) textNodes.push(node);
+            textNodes.forEach(tn => {
+              const words = tn.textContent?.split(/(\s+)/) || [];
+              const frag = document.createDocumentFragment();
+              words.forEach(w => {
+                if (/^\s+$/.test(w) || w === "") {
+                  frag.appendChild(document.createTextNode(w));
+                } else {
+                  const span = document.createElement("span");
+                  span.className = "vw";
+                  span.textContent = w;
+                  frag.appendChild(span);
+                  allWordSpans.push(span);
+                }
+              });
+              tn.parentNode?.replaceChild(frag, tn);
+            });
+          });
+          if (allWordSpans.length > 0) {
             el.classList.add("voice-reading");
+            // Dim all words initially
+            allWordSpans.forEach(s => s.classList.add("voice-dim"));
             const hlTick = () => {
               if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                // Clean up highlights
                 el.classList.remove("voice-reading");
-                textEls.forEach(t => { t.classList.remove("voice-highlight"); t.classList.remove("voice-dim"); });
+                allWordSpans.forEach(s => { s.classList.remove("voice-highlight"); s.classList.remove("voice-dim"); });
                 return;
               }
               const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const activeIdx = Math.min(Math.floor(progress * textEls.length), textEls.length - 1);
-              textEls.forEach((t, i) => {
-                if (i === activeIdx) {
-                  t.classList.add("voice-highlight");
-                  t.classList.remove("voice-dim");
-                } else if (i < activeIdx) {
-                  t.classList.remove("voice-highlight");
-                  t.classList.remove("voice-dim");
+              const activeIdx = Math.min(Math.floor(progress * allWordSpans.length), allWordSpans.length - 1);
+              allWordSpans.forEach((s, i) => {
+                if (i <= activeIdx) {
+                  s.classList.add("voice-highlight");
+                  s.classList.remove("voice-dim");
                 } else {
-                  t.classList.remove("voice-highlight");
-                  t.classList.add("voice-dim");
+                  s.classList.remove("voice-highlight");
+                  s.classList.add("voice-dim");
                 }
               });
               highlightTimerRef.current = requestAnimationFrame(hlTick);
@@ -257,7 +283,7 @@ function useVoiceSystem(entered: boolean) {
   const stop = useCallback(() => {
     if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
     if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-    // Clean up all highlights
+    // Clean up all word highlights
     document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
     document.querySelectorAll(".voice-highlight").forEach(el => el.classList.remove("voice-highlight"));
     document.querySelectorAll(".voice-dim").forEach(el => el.classList.remove("voice-dim"));
