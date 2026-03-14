@@ -1033,8 +1033,8 @@ export default function Home() {
           </div>
           {newsletterSubmitted ? (
             <div className="form-success show">
-              <h3>Welcome to the Family</h3>
-              <p>Stay rooted. Your first message is on its way.</p>
+              <h3>You're In</h3>
+              <p>Watch your inbox — your foundation message is on its way.</p>
             </div>
           ) : (
             <form

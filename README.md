@@ -58,7 +58,7 @@ The welcome sequence is handled entirely by Kit once the subscriber is added to 
 | `KIT_TAG_ID` | No | Optional tag to apply to new subscribers |
 | `CONTACT_EMAIL` | No | Defaults to contact@backtothebasicsmovement.com |
 
-If `KIT_API_KEY` or `KIT_FORM_ID` are missing, the subscribe form will show a friendly error message to visitors and log a clear error server-side. The site will not crash.
+If `KIT_API_KEY` or `KIT_FORM_ID` are missing, the subscribe form automatically falls back to FormSubmit with an auto-reply welcome email. Subscribers still receive a message immediately. When Kit keys are added later, it becomes the primary path automatically.
 
 ### Contact form (Share Your Story)
 
@@ -74,7 +74,7 @@ Uses FormSubmit.co. Submissions go to `contact@backtothebasicsmovement.com`. No 
 4. Click "Enter the Movement"
 5. Scroll to the Subscribe section
 6. Enter a test email and click "Join"
-7. Confirm you see "Welcome to the Family" success message
+7. Confirm you see "You're In" success message
 8. Log into Kit and confirm the subscriber appears
 9. Confirm the welcome email arrives in the test inbox
 10. Test the "Share Your Story" form — confirm submission reaches contact@backtothebasicsmovement.com
