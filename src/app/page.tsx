@@ -492,11 +492,15 @@ function useScrollReveal(entered: boolean) {
             if (entry.isIntersecting) entry.target.classList.add("active");
           });
         },
-        { threshold: 0.1 }
+        { threshold: 0.05, rootMargin: "0px 0px 80px 0px" }
       );
       document.querySelectorAll(".reveal").forEach((el) => observer!.observe(el));
     }, 100);
-    return () => { clearTimeout(timer); observer?.disconnect(); };
+    // Safety net: force all reveals visible after 4s so nothing stays black
+    const fallback = setTimeout(() => {
+      document.querySelectorAll(".reveal:not(.active)").forEach((el) => el.classList.add("active"));
+    }, 4000);
+    return () => { clearTimeout(timer); clearTimeout(fallback); observer?.disconnect(); };
   }, [entered]);
 }
 
