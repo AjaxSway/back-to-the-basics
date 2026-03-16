@@ -80,6 +80,7 @@ function useVoiceSystem(entered: boolean) {
         if (!wasInterrupted) return; // small scroll — audio kept playing, nothing to do
         // After a real scroll, find and play whatever section they landed on
         if (!unlockedRef.current || !audioRef.current) return;
+        if (!enabledRef.current) return; // respect voice toggle
         if (!audioRef.current.paused) return;
         const sections = document.querySelectorAll("section[id]");
         let bestId: string | null = null;
@@ -109,6 +110,7 @@ function useVoiceSystem(entered: boolean) {
   const playAndScroll = useCallback(
     async (sectionId: string, force = false) => {
       if (!unlockedRef.current) return;
+      if (!enabled) return; // respect voice toggle — never play when OFF
       if (!SECTION_IDS.includes(sectionId)) return;
       if (!force && playedRef.current.has(sectionId)) return;
       if (audioRef.current) {
