@@ -414,6 +414,7 @@ function useAmbientMusic(enabled: boolean) {
   const targetVol = 0.045;
   const fadeDuration = 3;
 
+  // Create audio element once
   useEffect(() => {
     const audio = document.createElement("audio");
     audio.src = "/audio/ambient.mp3";
@@ -438,41 +439,32 @@ function useAmbientMusic(enabled: boolean) {
     };
     frameId = requestAnimationFrame(crossfade);
 
-    // Start music — called on user activation events
-    const startMusic = () => {
-      if (playingRef.current || !enabledRef.current) return;
-      audio.volume = targetVol;
-      audio.play().then(() => {
-        playingRef.current = true;
-        cleanup();
-      }).catch(() => {});
-    };
-
-    // User activation events (these are what browsers actually accept)
-    const activationEvents = ["click", "touchstart", "pointerdown", "keydown"];
-    const cleanup = () => {
-      activationEvents.forEach(e => document.removeEventListener(e, startMusic, true));
-    };
-    activationEvents.forEach(e => document.addEventListener(e, startMusic, true));
-
-    // Also try autoplay immediately (works on some browsers/domains)
-    audio.play().then(() => {
-      playingRef.current = true;
-      cleanup();
-    }).catch(() => {});
-
-    return () => { cleanup(); cancelAnimationFrame(frameId); audio.pause(); audio.src = ""; };
+    return () => { cancelAnimationFrame(frameId); audio.pause(); audio.src = ""; };
   }, []);
 
+  // React to enabled changes — play or pause
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     if (!enabled) {
       audio.pause();
       playingRef.current = false;
-    } else {
+    } else if (!playingRef.current) {
       audio.volume = targetVol;
-      audio.play().then(() => { playingRef.current = true; }).catch(() => {});
+      audio.play().then(() => { playingRef.current = true; }).catch(() => {
+        // If autoplay blocked, wait for next user gesture
+        const tryPlay = () => {
+          if (!enabledRef.current) return;
+          audio.volume = targetVol;
+          audio.play().then(() => {
+            playingRef.current = true;
+            cleanup();
+          }).catch(() => {});
+        };
+        const activationEvents = ["click", "touchstart", "pointerdown", "keydown"];
+        const cleanup = () => activationEvents.forEach(e => document.removeEventListener(e, tryPlay, true));
+        activationEvents.forEach(e => document.addEventListener(e, tryPlay, true));
+      });
     }
   }, [enabled]);
 }
@@ -530,7 +522,7 @@ export default function Home() {
   const voice = useVoiceSystem(entered);
   useScrollReveal(entered);
   useNavScroll();
-  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(false);
   useAmbientMusic(musicEnabled);
   const [mobileNav, setMobileNav] = useState(false);
   const [storySubmitted, setStorySubmitted] = useState(false);
@@ -541,7 +533,28 @@ export default function Home() {
   const sc = (id: string, base = "") =>
     `${base}${voice.activeSection === id ? " voice-reading" : ""}`.trim();
 
-  const handleEnter = () => { setEntered(true); };
+  const handleEnter = () => {
+    // Unlock audio context with this user gesture — iOS requires it
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch {}
+    // Pre-unlock the voice <audio> element — iOS Safari needs a play() during user gesture
+    if (voice.audioRef.current) {
+      voice.audioRef.current.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      voice.audioRef.current.play().then(() => {
+        voice.audioRef.current!.pause();
+        voice.audioRef.current!.currentTime = 0;
+        voice.audioRef.current!.src = "";
+      }).catch(() => {});
+    }
+    setEntered(true);
+    setMusicEnabled(true);
+  };
 
   const [gateAudioPlaying, setGateAudioPlaying] = useState(false);
   const founderVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -574,7 +587,7 @@ export default function Home() {
       <div className="enter-gate">
         <button
           className={`gate-sound-control${gateAudioPlaying ? " on" : ""}`}
-          onClick={() => { setGateAudioPlaying(true); setMusicEnabled(true); }}
+          onClick={() => { setGateAudioPlaying(true); }}
           aria-label="Enable sound"
         >
           {gateAudioPlaying ? (
