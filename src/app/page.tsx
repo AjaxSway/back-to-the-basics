@@ -163,96 +163,36 @@ function useVoiceSystem(entered: boolean) {
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Highlight text as voice reads
+        // Highlight text as voice reads — paragraph-level only
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
         if (el && audio) {
           const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
-          // Count total words to decide strategy
-          const totalWords = textEls.reduce((sum, t) => sum + (t.textContent?.split(/\s+/).filter(Boolean).length || 0), 0);
-          const useWordLevel = totalWords <= 350;
-
-          if (useWordLevel) {
-            // SHORT SECTIONS: word-by-word highlight
-            const allWordSpans: HTMLSpanElement[] = [];
-            textEls.forEach(t => {
-              if (t.querySelector(".vw")) {
-                allWordSpans.push(...Array.from(t.querySelectorAll(".vw")) as HTMLSpanElement[]);
+          if (textEls.length > 0) {
+            el.classList.add("voice-reading");
+            textEls.forEach(t => t.classList.add("voice-dim"));
+            const hlTick = () => {
+              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                el.classList.remove("voice-reading");
+                textEls.forEach(t => { t.classList.remove("voice-highlight"); t.classList.remove("voice-dim"); });
                 return;
               }
-              const walker = document.createTreeWalker(t, NodeFilter.SHOW_TEXT, null);
-              const textNodes: Text[] = [];
-              let nd: Text | null;
-              while ((nd = walker.nextNode() as Text | null)) textNodes.push(nd);
-              textNodes.forEach(tn => {
-                const words = tn.textContent?.split(/(\s+)/) || [];
-                const frag = document.createDocumentFragment();
-                words.forEach(w => {
-                  if (/^\s+$/.test(w) || w === "") {
-                    frag.appendChild(document.createTextNode(w));
-                  } else {
-                    const span = document.createElement("span");
-                    span.className = "vw";
-                    span.textContent = w;
-                    frag.appendChild(span);
-                    allWordSpans.push(span);
-                  }
-                });
-                tn.parentNode?.replaceChild(frag, tn);
+              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              const activeIdx = Math.min(Math.floor(progress * textEls.length), textEls.length - 1);
+              textEls.forEach((t, i) => {
+                if (i === activeIdx) {
+                  t.classList.add("voice-highlight");
+                  t.classList.remove("voice-dim");
+                } else if (i < activeIdx) {
+                  t.classList.remove("voice-highlight");
+                  t.classList.remove("voice-dim");
+                } else {
+                  t.classList.remove("voice-highlight");
+                  t.classList.add("voice-dim");
+                }
               });
-            });
-            if (allWordSpans.length > 0) {
-              el.classList.add("voice-reading");
-              allWordSpans.forEach(s => s.classList.add("voice-dim"));
-              const hlTick = () => {
-                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                  el.classList.remove("voice-reading");
-                  allWordSpans.forEach(s => { s.classList.remove("voice-highlight"); s.classList.remove("voice-dim"); });
-                  return;
-                }
-                const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-                const activeIdx = Math.min(Math.floor(progress * allWordSpans.length), allWordSpans.length - 1);
-                allWordSpans.forEach((s, i) => {
-                  if (i <= activeIdx) {
-                    s.classList.add("voice-highlight");
-                    s.classList.remove("voice-dim");
-                  } else {
-                    s.classList.remove("voice-highlight");
-                    s.classList.add("voice-dim");
-                  }
-                });
-                highlightTimerRef.current = requestAnimationFrame(hlTick);
-              };
               highlightTimerRef.current = requestAnimationFrame(hlTick);
-            }
-          } else {
-            // LONG SECTIONS: paragraph-by-paragraph highlight
-            if (textEls.length > 0) {
-              el.classList.add("voice-reading");
-              textEls.forEach(t => t.classList.add("voice-dim"));
-              const hlTick = () => {
-                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                  el.classList.remove("voice-reading");
-                  textEls.forEach(t => { t.classList.remove("voice-highlight"); t.classList.remove("voice-dim"); });
-                  return;
-                }
-                const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-                const activeIdx = Math.min(Math.floor(progress * textEls.length), textEls.length - 1);
-                textEls.forEach((t, i) => {
-                  if (i === activeIdx) {
-                    t.classList.add("voice-highlight");
-                    t.classList.remove("voice-dim");
-                  } else if (i < activeIdx) {
-                    t.classList.remove("voice-highlight");
-                    t.classList.remove("voice-dim");
-                  } else {
-                    t.classList.remove("voice-highlight");
-                    t.classList.add("voice-dim");
-                  }
-                });
-                highlightTimerRef.current = requestAnimationFrame(hlTick);
-              };
-              highlightTimerRef.current = requestAnimationFrame(hlTick);
-            }
+            };
+            highlightTimerRef.current = requestAnimationFrame(hlTick);
           }
         }
       } catch {
@@ -272,6 +212,11 @@ function useVoiceSystem(entered: boolean) {
     currentRef.current = null;
     setActiveSection(null);
     if (finishedId) {
+      // When founder voice finishes, signal to play the video instead of advancing
+      if (finishedId === "founder") {
+        window.dispatchEvent(new CustomEvent("btb-play-founder-video"));
+        return;
+      }
       const idx = SECTION_IDS.indexOf(finishedId);
       if (idx >= 0 && idx < SECTION_IDS.length - 1) {
         const nextId = SECTION_IDS[idx + 1];
@@ -297,6 +242,21 @@ function useVoiceSystem(entered: boolean) {
     attach();
     return () => audioRef.current?.removeEventListener("ended", handler);
   }, []);
+
+  // Resume voice after founder video ends — continue from education
+  useEffect(() => {
+    const resumeAfterVideo = () => {
+      if (!enabled) return;
+      unlockedRef.current = true;
+      transitioningRef.current = true;
+      setTimeout(() => {
+        transitioningRef.current = false;
+        playAndScroll("education", true);
+      }, 800);
+    };
+    window.addEventListener("btb-resume-after-video", resumeAfterVideo);
+    return () => window.removeEventListener("btb-resume-after-video", resumeAfterVideo);
+  }, [enabled, playAndScroll]);
 
   // Autoplay home audio once user has entered
   useEffect(() => {
@@ -411,7 +371,7 @@ function useAmbientMusic(enabled: boolean) {
   const playingRef = useRef(false);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
-  const targetVol = 0.045;
+  const targetVol = 0.018;
   const fadeDuration = 3;
 
   // Create audio element once
@@ -560,25 +520,57 @@ export default function Home() {
   const founderVideoRef = useRef<HTMLVideoElement | null>(null);
   const musicWasEnabled = useRef(true);
 
-  // Pause voice + music when video plays, resume when it ends/pauses
+  // Pause voice + music when video plays, resume all when it ends
+  const videoEndedNaturally = useRef(false);
   useEffect(() => {
     const video = founderVideoRef.current;
     if (!video) return;
+
+    // Listen for voice system signal to auto-play the video
+    const onFounderVideoSignal = () => {
+      if (!video) return;
+      video.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        video.muted = false;
+        video.play().catch(() => {
+          // If unmuted autoplay fails, try muted
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      }, 600);
+    };
+    window.addEventListener("btb-play-founder-video", onFounderVideoSignal);
+
     const onPlay = () => {
       musicWasEnabled.current = musicEnabled;
       voice.pause();
       setMusicEnabled(false);
+      videoEndedNaturally.current = false;
     };
-    const onStop = () => {
+    const onPause = () => {
+      if (!videoEndedNaturally.current && musicWasEnabled.current) {
+        setMusicEnabled(true);
+      }
+    };
+    const onEnded = () => {
+      videoEndedNaturally.current = true;
       if (musicWasEnabled.current) setMusicEnabled(true);
+      // Advance voice to education section (next after founder)
+      if (voice.enabled && voice.audioRef.current) {
+        setTimeout(() => {
+          // Dispatch to voice system to continue from education
+          window.dispatchEvent(new CustomEvent("btb-resume-after-video"));
+        }, 1000);
+      }
     };
     video.addEventListener("play", onPlay);
-    video.addEventListener("pause", onStop);
-    video.addEventListener("ended", onStop);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("ended", onEnded);
     return () => {
+      window.removeEventListener("btb-play-founder-video", onFounderVideoSignal);
       video.removeEventListener("play", onPlay);
-      video.removeEventListener("pause", onStop);
-      video.removeEventListener("ended", onStop);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("ended", onEnded);
     };
   }, [musicEnabled, voice]);
 
@@ -784,7 +776,7 @@ export default function Home() {
 
               {/* FOUNDER VIDEO */}
               <div className="founder-video-wrapper">
-                <video ref={founderVideoRef} controls playsInline autoPlay muted preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
+                <video ref={founderVideoRef} controls playsInline preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
                   <source src="/video/founder-video.mp4" type="video/mp4" />
                   <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
                   Your browser does not support the video tag.
