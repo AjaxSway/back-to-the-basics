@@ -599,6 +599,7 @@ export default function Home() {
         <div className="enter-bg" aria-hidden="true" />
         <div className="enter-crest" role="img" aria-label="Back to the Basics Movement Seal" />
         <button className="enter-btn" onClick={handleEnter}>Enter the Movement</button>
+        <p className="enter-hint">This experience will scroll and read aloud to you. Turn your volume up.</p>
       </div>
     );
   }
