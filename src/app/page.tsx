@@ -579,7 +579,7 @@ export default function Home() {
       <div className="enter-gate">
         <button
           className={`gate-sound-control${gateAudioPlaying ? " on" : ""}`}
-          onClick={() => { setGateAudioPlaying(true); }}
+          onClick={() => { setGateAudioPlaying(true); setMusicEnabled(true); }}
           aria-label="Enable sound"
         >
           {gateAudioPlaying ? (
