@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 const SECTION_IDS = [
   "home","mission","why","pillars","alanwatts","stormtree",
-  "founder","education","voices","standard","subscribe",
+  "founder","memorial","education","voices","standard","subscribe",
 ];
 
 function useVoiceSystem(entered: boolean) {
@@ -243,7 +243,7 @@ function useVoiceSystem(entered: boolean) {
     return () => audioRef.current?.removeEventListener("ended", handler);
   }, []);
 
-  // Resume voice after founder video ends — continue from education
+  // Resume voice after founder video ends — continue from memorial
   useEffect(() => {
     const resumeAfterVideo = () => {
       if (!enabled) return;
@@ -251,7 +251,7 @@ function useVoiceSystem(entered: boolean) {
       transitioningRef.current = true;
       setTimeout(() => {
         transitioningRef.current = false;
-        playAndScroll("education", true);
+        playAndScroll("memorial", true);
       }, 800);
     };
     window.addEventListener("btb-resume-after-video", resumeAfterVideo);
@@ -836,10 +836,15 @@ export default function Home() {
               <p style={{ color: "var(--gold)", fontSize: "1.3rem", fontStyle: "italic", marginTop: 30, textAlign: "center", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.9 }}>It tells the world this is not ego driven. It is generational. That makes the movement real.</p>
             </div>
 
-            <div className="gold-line" />
+          </div>
+        </div>
+      </section>
 
-            {/* Memorial */}
-            <div style={{ marginTop: 80 }}>
+      {/* 7b. MEMORIAL — narrated with George's voice */}
+      <section id="memorial" className={sc("memorial")} style={{ borderTop: "1px solid rgba(202,144,61,0.06)" }}>
+        <div className="content-mid reveal">
+          <div className="founder-section">
+            <div style={{ marginTop: 0 }}>
               <span className="section-label">The Foundation</span>
               <p style={{ color: "var(--text-muted)", fontSize: "1.15rem", lineHeight: 1.95, maxWidth: 720, margin: "30px auto 60px", textAlign: "center" }}>
                 Every movement has a heartbeat. Ours did not start with an idea on paper. It started with the people who shaped us, who challenged us, who loved us in ways that left marks deeper than words could ever describe. This section exists because they deserve more than a memory. They deserve a foundation.
