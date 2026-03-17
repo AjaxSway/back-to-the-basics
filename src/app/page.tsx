@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 const SECTION_IDS = [
   "home","mission","why","pillars","alanwatts","stormtree",
-  "founder","memorial","education","voices","standard","subscribe",
+  "founder","ivette","memorial","education","voices","standard","subscribe",
 ];
 
 function useVoiceSystem(entered: boolean) {
@@ -256,7 +256,7 @@ function useVoiceSystem(entered: boolean) {
     return () => audioRef.current?.removeEventListener("ended", handler);
   }, []);
 
-  // Resume voice after founder video ends — continue from memorial
+  // Resume voice after founder video ends — continue to Ivette's section
   useEffect(() => {
     const resumeAfterVideo = () => {
       if (!enabled) return;
@@ -264,7 +264,7 @@ function useVoiceSystem(entered: boolean) {
       transitioningRef.current = true;
       setTimeout(() => {
         transitioningRef.current = false;
-        playAndScroll("memorial", true);
+        playAndScroll("ivette", true);
       }, 800);
     };
     window.addEventListener("btb-resume-after-video", resumeAfterVideo);
@@ -812,8 +812,14 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="gold-line" />
+          </div>
+        </div>
+      </section>
 
+      {/* 7a. IVETTE — narrated by Angel Voice */}
+      <section className={sc("ivette")} id="ivette" style={{ borderTop: "1px solid rgba(202,144,61,0.06)" }}>
+        <div className="content-mid reveal">
+          <div className="founder-section">
             {/* Ivette */}
             <div style={{ maxWidth: 720, margin: "60px auto 50px", textAlign: "center" }}>
               <p style={{ fontSize: "0.82rem", fontWeight: 600, letterSpacing: 5, textTransform: "uppercase", color: "var(--gold)", marginBottom: 16 }}>The Foundation</p>
