@@ -29,10 +29,9 @@ function useVoiceSystem(entered: boolean) {
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
-  // Check localStorage on mount
+  // Voice always starts ON — fresh experience every visit
   useEffect(() => {
-    const stored = localStorage.getItem("btb_voice_enabled");
-    if (stored === "0") setEnabled(false);
+    localStorage.removeItem("btb_voice_enabled");
   }, []);
 
   // Handle manual scroll — small movements ignored, big scrolls switch sections
@@ -174,6 +173,12 @@ function useVoiceSystem(entered: boolean) {
           if (textEls.length > 0) {
             el.classList.add("voice-reading");
             textEls.forEach(t => t.classList.add("voice-dim"));
+            // Weight highlighting by character count so longer paragraphs get more time
+            const charCounts = textEls.map(t => Math.max((t.textContent || "").length, 1));
+            const totalChars = charCounts.reduce((a, b) => a + b, 0);
+            const cumulative: number[] = [];
+            let sum = 0;
+            for (const c of charCounts) { sum += c / totalChars; cumulative.push(sum); }
             const hlTick = () => {
               if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
                 el.classList.remove("voice-reading");
@@ -181,7 +186,11 @@ function useVoiceSystem(entered: boolean) {
                 return;
               }
               const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const activeIdx = Math.min(Math.floor(progress * textEls.length), textEls.length - 1);
+              let activeIdx = 0;
+              for (let i = 0; i < cumulative.length; i++) {
+                if (progress < cumulative[i]) { activeIdx = i; break; }
+                activeIdx = i;
+              }
               textEls.forEach((t, i) => {
                 if (i === activeIdx) {
                   t.classList.add("voice-highlight");
