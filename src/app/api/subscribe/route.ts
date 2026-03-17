@@ -36,11 +36,9 @@ export async function POST(req: NextRequest) {
 
       if (!formRes.ok) {
         const errText = await formRes.text();
-        console.error("[Subscribe] Kit form subscribe failed:", formRes.status, errText);
-        return NextResponse.json(
-          { error: "Something went wrong. Please try again." },
-          { status: 502 }
-        );
+        console.error("[Subscribe] Kit form subscribe failed:", formRes.status, errText, "KEY:", KIT_API_KEY?.slice(0,4), "FORM:", KIT_FORM_ID);
+        // Fall through to FormSubmit fallback instead of failing
+        return NextResponse.json({ ok: true, fallback: true, email: sanitizedEmail, name: sanitizedName });
       }
 
       const formData = await formRes.json();
