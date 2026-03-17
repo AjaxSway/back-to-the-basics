@@ -903,8 +903,8 @@ export default function Home() {
       {/* 8. EDUCATION */}
       <section className={sc("education", "education")} id="education">
         <div className="content-wide reveal">
-          <span className="section-label">Learn and Grow Together</span>
-          <h2 className="section-title">Education</h2>
+          <span className="section-label">Start Here. Grow Here. Lead From Here.</span>
+          <h2 className="section-title">This Is How You Build Your Foundation</h2>
           <p style={{ color: "var(--text-bright)", fontSize: "1.25rem", lineHeight: 2, maxWidth: 720, margin: "0 auto 10px", textAlign: "center" }}>This movement is built on practical understanding.</p>
           <p style={{ color: "var(--text)", fontSize: "1.15rem", lineHeight: 2, maxWidth: 720, margin: "0 auto 10px", textAlign: "center" }}>These resources help people rebuild clarity, discipline, and structure in daily life.</p>
           <p style={{ color: "var(--gold)", fontSize: "1.1rem", lineHeight: 2, maxWidth: 720, margin: "0 auto 30px", textAlign: "center" }}>No cost. No gatekeeping. Only principles.</p>
@@ -915,16 +915,17 @@ export default function Home() {
           <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: 1.95, maxWidth: 700, margin: "0 auto", textAlign: "center" }}>Because wisdom is not owned. It is shared. And there is power in testimony that no textbook could ever replace.</p>
           <div className="education-grid">
             {[
-              { title: "Community Discussions", desc: "Open conversations about life, growth, discipline, and the things most people are afraid to say out loud. No judgment. Just truth and support." },
-              { title: "Personal Growth Workshops", desc: "Live sessions focused on building habits, breaking cycles, and strengthening your foundation from the inside out. Real tools for real life." },
-              { title: "Story Submissions", desc: "Your story is your power. Submit your experience, your lesson, your turning point. Someone out there needs to hear exactly what you went through." },
-              { title: "Discipline Challenges", desc: "Monthly challenges designed to push you past comfort. Accountability, consistency, and growth that you can actually measure week over week." },
-              { title: "Faith-Centered Reflections", desc: "Guided reflections that honor the spiritual side of the journey. Rooted in faith, open to all. A space to be still and listen." },
-              { title: "Leadership Development", desc: "For those ready to step up. Resources, mentorship opportunities, and frameworks for leading yourself and others with integrity." },
+              { title: "Discipline Challenges", desc: "Step beyond comfort and into structure. Build consistency. Strengthen your habits. Track real progress week over week.", action: "Start the challenge", featured: true },
+              { title: "Community Discussions", desc: "Real conversations about life, growth, and discipline. No judgment. No filters. Just truth and support.", action: "Join the conversation", featured: false },
+              { title: "Personal Growth Workshops", desc: "Build habits that last. Break cycles that hold you back. Practical tools for real life, from the inside out.", action: "Explore workshops", featured: false },
+              { title: "Story Submissions", desc: "Your story carries weight. Share your lesson, your turning point, your growth. Someone out there needs to hear it.", action: "Share your story", featured: false },
+              { title: "Faith-Centered Reflections", desc: "Slow down and reconnect. Reflect with intention. Rooted in faith. Open to all.", action: "Begin reflection", featured: false },
+              { title: "Leadership Development", desc: "Lead yourself first. Then lead others with clarity, discipline, and integrity. Step into responsibility with purpose.", action: "Step into leadership", featured: false },
             ].map((card) => (
-              <div key={card.title} className="edu-card">
+              <div key={card.title} className={`edu-card${card.featured ? " edu-featured" : ""}`}>
                 <h4>{card.title}</h4>
                 <p>{card.desc}</p>
+                <span className="edu-action">{card.action}</span>
               </div>
             ))}
           </div>

@@ -423,6 +423,18 @@ section { padding: 120px 40px; }
   margin-bottom: 14px; font-weight: 400;
 }
 .edu-card p { font-size: 1.05rem; line-height: 1.85; color: var(--text-muted); }
+.edu-action {
+  display: block; margin-top: 18px;
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--gold);
+  opacity: 0.6; transition: opacity 0.3s ease;
+}
+.edu-card:hover .edu-action { opacity: 1; }
+.edu-featured {
+  border-color: rgba(202,144,61,0.25);
+  box-shadow: 0 0 30px rgba(202,144,61,0.08), 0 0 60px rgba(202,144,61,0.04);
+}
+.edu-featured h4 { font-size: 1.5rem; }
 
 .edu-buttons {
   display: flex; gap: 16px; flex-wrap: wrap;
