@@ -114,10 +114,12 @@ function useVoiceSystem(entered: boolean) {
       if (!enabled) return; // respect voice toggle — never play when OFF
       if (!SECTION_IDS.includes(sectionId)) return;
       if (!force && playedRef.current.has(sectionId)) return;
+      // Clear previous audio cleanly to prevent buffer corruption / static
       if (audioRef.current) {
-        audioRef.current.volume = 0;
+        currentRef.current = null; // Guard: prevent ended handler from firing during flush
         audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        audioRef.current.removeAttribute("src");
+        audioRef.current.load(); // Flush buffer
       }
       if (!audioRef.current) return;
       audioRef.current.src = `/audio/${sectionId}.mp3`;
@@ -127,8 +129,10 @@ function useVoiceSystem(entered: boolean) {
       setActiveSection(sectionId);
       try {
         await audioRef.current.play();
-        // Fade in to prevent pop/click
+        // Fade in to prevent pop/click — guarded by section ID to prevent stale fades
+        const fadeSection = sectionId;
         const fadeIn = () => {
+          if (currentRef.current !== fadeSection) return; // section changed, stop this fade
           if (audioRef.current && audioRef.current.volume < 0.95) {
             audioRef.current.volume = Math.min(1, audioRef.current.volume + 0.05);
             requestAnimationFrame(fadeIn);
@@ -295,9 +299,9 @@ function useVoiceSystem(entered: boolean) {
     document.querySelectorAll(".voice-highlight").forEach(el => el.classList.remove("voice-highlight"));
     document.querySelectorAll(".voice-dim").forEach(el => el.classList.remove("voice-dim"));
     if (audioRef.current) {
-      audioRef.current.volume = 0;
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.removeAttribute("src");
+      audioRef.current.load(); // Flush buffer clean
     }
     currentRef.current = null;
     setActiveSection(null);
@@ -521,14 +525,18 @@ export default function Home() {
       src.buffer = buf;
       src.connect(ctx.destination);
       src.start(0);
+      // Close the AudioContext after unlock to prevent audio interference
+      src.onended = () => ctx.close().catch(() => {});
     } catch {}
     // Pre-unlock the voice <audio> element — iOS Safari needs a play() during user gesture
     if (voice.audioRef.current) {
-      voice.audioRef.current.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      voice.audioRef.current.play().then(() => {
-        voice.audioRef.current!.pause();
-        voice.audioRef.current!.currentTime = 0;
-        voice.audioRef.current!.src = "";
+      const a = voice.audioRef.current;
+      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.removeAttribute("src");
+        a.load(); // Flush the buffer clean
       }).catch(() => {});
     }
     setEntered(true);
