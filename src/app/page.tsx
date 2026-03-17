@@ -178,7 +178,13 @@ function useVoiceSystem(entered: boolean) {
             el.classList.add("voice-reading");
             textEls.forEach(t => t.classList.add("voice-dim"));
             // Weight highlighting by character count so longer paragraphs get more time
-            const charCounts = textEls.map(t => Math.max((t.textContent || "").length, 1));
+            // Give short elements (like single words) a minimum weight so the voice has time to read them
+            const charCounts = textEls.map(t => {
+              const len = (t.textContent || "").length;
+              // Fundamental words need more time — the voice pauses on each
+              if (t.classList.contains("fundamental-word")) return Math.max(len, 60);
+              return Math.max(len, 20);
+            });
             const totalChars = charCounts.reduce((a, b) => a + b, 0);
             const cumulative: number[] = [];
             let sum = 0;
