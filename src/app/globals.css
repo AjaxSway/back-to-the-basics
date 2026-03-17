@@ -934,7 +934,7 @@ section.voice-reading .reveal { opacity: 1; transform: translateY(0); }
   .nav-links.show { display: flex; }
   .nav-toggle { display: block; }
 
-  .site-controls { top: 52px; right: 10px; gap: 6px; padding: 5px 8px; }
+  .site-controls { top: auto; bottom: 16px; left: 50%; right: auto; transform: translateX(-50%); gap: 6px; padding: 5px 8px; }
   .site-controls .voice-toggle,
   .site-controls .autoscroll-toggle,
   .site-controls .music-toggle { font-size: 0.6rem; padding: 5px 10px; letter-spacing: 1px; }

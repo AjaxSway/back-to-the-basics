@@ -49,10 +49,13 @@ function useVoiceSystem(entered: boolean) {
       userScrolledRef.current = true;
       clearTimeout(timeout);
 
-      // Only interrupt audio if user scrolled more than 150px (real intentional scroll)
+      // If user scrolled more than 150px — they want manual control
+      // Stop voice, stop auto-scroll, let them browse freely
       if (distance > 150 && !interrupted) {
         interrupted = true;
         transitioningRef.current = false;
+        // Turn off auto-scroll
+        autoScrollRef.current = false;
         if (audioRef.current && !audioRef.current.paused) {
           // Fade out to prevent pop/click
           const a = audioRef.current;
@@ -63,39 +66,26 @@ function useVoiceSystem(entered: boolean) {
             } else {
               a.volume = 0;
               a.pause();
-              a.currentTime = 0;
+              a.removeAttribute("src");
+              a.load();
             }
           };
           fadeOut();
           currentRef.current = null;
           if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
+          if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
+          // Clean up highlights
+          document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
+          document.querySelectorAll(".voice-highlight").forEach(el => el.classList.remove("voice-highlight"));
+          document.querySelectorAll(".voice-dim").forEach(el => el.classList.remove("voice-dim"));
         }
       }
 
       timeout = setTimeout(() => {
         userScrolledRef.current = false;
-        const wasInterrupted = interrupted;
         scrollStart = null;
         interrupted = false;
-
-        if (!wasInterrupted) return; // small scroll — audio kept playing, nothing to do
-        // After a real scroll, find and play whatever section they landed on
-        if (!unlockedRef.current || !audioRef.current) return;
-        if (!enabledRef.current) return; // respect voice toggle
-        if (!audioRef.current.paused) return;
-        const sections = document.querySelectorAll("section[id]");
-        let bestId: string | null = null;
-        let bestRatio = 0;
-        sections.forEach((sec) => {
-          const r = sec.getBoundingClientRect();
-          const vh = window.innerHeight;
-          const visible = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
-          const ratio = visible / Math.max(1, r.height);
-          if (ratio > bestRatio) { bestRatio = ratio; bestId = sec.id; }
-        });
-        if (bestId && bestRatio >= 0.3) {
-          playAndScrollRef.current?.(bestId, true);
-        }
+        // Don't auto-restart voice — user took control. They can re-enable with toggle.
       }, 800);
     };
     window.addEventListener("wheel", onScroll, { passive: true });
@@ -400,7 +390,7 @@ function useAmbientMusic(enabled: boolean) {
   const playingRef = useRef(false);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
-  const targetVol = 0.018;
+  const targetVol = 0.008; // Lowered — voice must stay above music
   const fadeDuration = 3;
 
   // Create audio element once
@@ -649,13 +639,24 @@ export default function Home() {
           <span /><span /><span />
         </div>
         <ul className={`nav-links${mobileNav ? " show" : ""}`}>
-          <li><a href="#mission" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9670;</span> Mission</a></li>
-          <li><a href="#why" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9788;</span> Why</a></li>
-          <li><a href="#pillars" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9707;</span> Pillars</a></li>
-          <li><a href="#founder" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9733;</span> Founder</a></li>
-          <li><a href="#education" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9776;</span> Education</a></li>
-          <li><a href="#voices" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9688;</span> Voices</a></li>
-          <li><a href="#subscribe" onClick={() => setMobileNav(false)}><span className="nav-icon">&#9993;</span> Subscribe</a></li>
+          {[
+            { id: "mission", icon: "&#9670;", label: "Mission" },
+            { id: "why", icon: "&#9788;", label: "Why" },
+            { id: "pillars", icon: "&#9707;", label: "Pillars" },
+            { id: "founder", icon: "&#9733;", label: "Founder" },
+            { id: "education", icon: "&#9776;", label: "Education" },
+            { id: "voices", icon: "&#9688;", label: "Voices" },
+            { id: "subscribe", icon: "&#9993;", label: "Subscribe" },
+          ].map((item) => (
+            <li key={item.id}><a href={`#${item.id}`} onClick={(e) => {
+              e.preventDefault();
+              setMobileNav(false);
+              // Stop voice so it doesn't fight the navigation
+              voice.pause();
+              const el = document.getElementById(item.id);
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}><span className="nav-icon" dangerouslySetInnerHTML={{ __html: item.icon }} /> {item.label}</a></li>
+          ))}
         </ul>
       </nav>
 
@@ -1182,7 +1183,7 @@ export default function Home() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <a href="https://www.facebook.com/profile.php?id=61584977363792" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Facebook</a>
                   <a href="https://www.instagram.com/backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Instagram</a>
-                  <a href="https://x.com/backtobasics_mv" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>X</a>
+                  <a href="https://x.com/ToBasics95411" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>X</a>
                   <a href="https://www.youtube.com/@backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>YouTube</a>
                   <a href="https://www.tiktok.com/@george.back2basics" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>TikTok</a>
                 </div>
