@@ -166,9 +166,9 @@ function useVoiceSystem(entered: boolean) {
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Highlight text as voice reads — paragraph-level only
+        // Highlight text as voice reads — paragraph-level only (skip memorial — no highlights, just voice)
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-        if (el && audio) {
+        if (el && audio && sectionId !== "memorial") {
           const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
           if (textEls.length > 0) {
             el.classList.add("voice-reading");
@@ -185,10 +185,12 @@ function useVoiceSystem(entered: boolean) {
                 textEls.forEach(t => { t.classList.remove("voice-highlight"); t.classList.remove("voice-dim"); });
                 return;
               }
-              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              // Lag the highlight slightly so it doesn't jump ahead of the voice
+              const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              const progress = Math.max(0, rawProgress * 0.93);
               let activeIdx = 0;
               for (let i = 0; i < cumulative.length; i++) {
-                if (progress < cumulative[i]) { activeIdx = i; break; }
+                if (progress < cumulative[i] - 0.02) { activeIdx = i; break; }
                 activeIdx = i;
               }
               textEls.forEach((t, i) => {
@@ -233,12 +235,16 @@ function useVoiceSystem(entered: boolean) {
       const idx = SECTION_IDS.indexOf(finishedId);
       if (idx >= 0 && idx < SECTION_IDS.length - 1) {
         const nextId = SECTION_IDS[idx + 1];
+        // Stop voice+scroll after subscribe — keep music playing, let user browse freely
+        if (finishedId === "subscribe") return;
+        // Longer pause before memorial — let music breathe after Ivette
+        const delay = finishedId === "ivette" ? 4000 : 1200;
         // Block the observer from hijacking during the transition gap
         transitioningRef.current = true;
         setTimeout(() => {
           transitioningRef.current = false;
           playAndScroll(nextId, true);
-        }, 1200);
+        }, delay);
       }
     }
   };
@@ -720,8 +726,12 @@ export default function Home() {
           <h2 className="section-title">Why This Movement Exists</h2>
           <p style={{ fontSize: "1.2rem", lineHeight: 2.1, color: "var(--text)", maxWidth: 720, margin: "0 auto 30px" }}>The Back to the Basics Movement was created in response to a world that has become distracted, reactive, and disconnected from the principles that build strong lives.</p>
           <p style={{ fontSize: "1.15rem", lineHeight: 2, color: "var(--text-muted)", marginBottom: 30 }}>This movement calls people back to the fundamentals:</p>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.7rem", fontWeight: 300, color: "var(--text-bright)", lineHeight: 2.4, marginBottom: 40 }}>
-            Clarity<br />Truth<br />Discipline<br />Gratitude<br />Structure
+          <div className="fundamentals-list" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.7rem", fontWeight: 300, color: "var(--text-bright)", lineHeight: 2.4, marginBottom: 40, textAlign: "center" }}>
+            <p className="fundamental-word">Clarity</p>
+            <p className="fundamental-word">Truth</p>
+            <p className="fundamental-word">Discipline</p>
+            <p className="fundamental-word">Gratitude</p>
+            <p className="fundamental-word">Structure</p>
           </div>
           <div className="gold-line" />
           <p style={{ fontSize: "1.25rem", lineHeight: 2, color: "var(--text)", maxWidth: 700, margin: "30px auto 0" }}>When individuals become stronger, families become stronger.<br />When families become stronger, communities become stronger.</p>
@@ -788,16 +798,7 @@ export default function Home() {
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "3.2rem", color: "var(--text-bright)", fontWeight: 300, marginBottom: 12 }}>George Bayze</h3>
               <p style={{ fontSize: "1.1rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 40 }}>Vision Steward</p>
 
-              {/* FOUNDER VIDEO */}
-              <div className="founder-video-wrapper">
-                <video ref={founderVideoRef} controls playsInline preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
-                  <source src="/video/founder-video.mp4" type="video/mp4" />
-                  <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-
-              <div style={{ maxWidth: 720, margin: "0 auto", fontSize: "1.1rem", lineHeight: 2.1, color: "var(--text)", textAlign: "center" }}>
+              <div style={{ maxWidth: 720, margin: "0 auto 60px", fontSize: "1.1rem", lineHeight: 2.1, color: "var(--text)", textAlign: "center" }}>
                 <p>This movement did not start as a business idea. It started as a&nbsp;conviction.</p>
                 <p>There were seasons in my life that forced me to slow down and really look at what I was building. Loss changes you. Responsibility changes you. Fatherhood changes&nbsp;you.</p>
                 <p>I realized that success without structure collapses. Influence without integrity fades. And faith without discipline becomes&nbsp;noise.</p>
@@ -809,6 +810,35 @@ export default function Home() {
                 <p>My daughters are not part of this brand. They are the reason it&nbsp;exists.</p>
                 <p>Everything here is built with them in&nbsp;mind.</p>
                 <p style={{ color: "var(--text-bright)", fontStyle: "italic" }}>Because principles outlive people. And foundations outlast&nbsp;applause.</p>
+              </div>
+
+              {/* FOUNDER VIDEO — plays after voice finishes speech */}
+              <div className="founder-video-wrapper">
+                <video ref={founderVideoRef} controls playsInline preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
+                  <source src="/video/founder-video.mp4" type="video/mp4" />
+                  <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+
+              {/* The Why — Daughters (immediately after video) */}
+              <div style={{ marginTop: 60 }}>
+                <p style={{ fontSize: "0.85rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 30, textAlign: "center" }}>The Why</p>
+                <div style={{ display: "flex", gap: 30, justifyContent: "center", flexWrap: "wrap", marginBottom: 30 }}>
+                  <div style={{ textAlign: "center", maxWidth: 250 }}>
+                    <img src="/images/founder-michele-bayze.jpg" alt="Michele Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                    <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Michele Bayze</p>
+                  </div>
+                  <div style={{ textAlign: "center", maxWidth: 250 }}>
+                    <img src="/images/founder-alexis-bayze.jpg" alt="Alexis Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                    <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Alexis Bayze</p>
+                  </div>
+                  <div style={{ textAlign: "center", maxWidth: 250 }}>
+                    <img src="/images/founder-emma-bayze.jpg" alt="Emma Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                    <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Emma Bayze</p>
+                  </div>
+                </div>
+                <p style={{ color: "var(--gold)", fontSize: "1.3rem", fontStyle: "italic", marginTop: 30, textAlign: "center", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.9 }}>It tells the world this is not ego driven. It is generational. That makes the movement real.</p>
               </div>
             </div>
 
@@ -836,53 +866,34 @@ export default function Home() {
               </div>
             </div>
 
-            {/* The Why — Daughters */}
-            <div style={{ marginTop: 60 }}>
-              <p style={{ fontSize: "0.85rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 30, textAlign: "center" }}>The Why</p>
-              <div style={{ display: "flex", gap: 30, justifyContent: "center", flexWrap: "wrap", marginBottom: 30 }}>
-                <div style={{ textAlign: "center", maxWidth: 250 }}>
-                  <img src="/images/founder-michele-bayze.jpg" alt="Michele Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
-                  <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Michele Bayze</p>
-                </div>
-                <div style={{ textAlign: "center", maxWidth: 250 }}>
-                  <img src="/images/founder-alexis-bayze.jpg" alt="Alexis Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
-                  <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Alexis Bayze</p>
-                </div>
-                <div style={{ textAlign: "center", maxWidth: 250 }}>
-                  <img src="/images/founder-emma-bayze.jpg" alt="Emma Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
-                  <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Emma Bayze</p>
-                </div>
-              </div>
-              <p style={{ color: "var(--gold)", fontSize: "1.3rem", fontStyle: "italic", marginTop: 30, textAlign: "center", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.9 }}>It tells the world this is not ego driven. It is generational. That makes the movement real.</p>
-            </div>
-
           </div>
         </div>
       </section>
 
-      {/* 7b. MEMORIAL — narrated with George's voice */}
+      {/* 7b. MEMORIAL — narrated with George's voice, no highlighting */}
       <section id="memorial" className={sc("memorial")} style={{ borderTop: "1px solid rgba(202,144,61,0.06)" }}>
         <div className="content-mid reveal">
           <div className="founder-section">
             <div style={{ marginTop: 0 }}>
               <span className="section-label">The Foundation</span>
-              <p style={{ color: "var(--text-muted)", fontSize: "1.15rem", lineHeight: 1.95, maxWidth: 720, margin: "30px auto 60px", textAlign: "center" }}>
-                Every movement has a heartbeat. Ours did not start with an idea on paper. It started with the people who shaped us, who challenged us, who loved us in ways that left marks deeper than words could ever describe. This section exists because they deserve more than a memory. They deserve a foundation.
-              </p>
 
               {/* Valerie */}
-              <div className="memorial-person clearfix">
+              <div className="memorial-person clearfix" style={{ marginTop: 50 }}>
                 <img src="/images/memorial-valerie.jpg" alt="Valerie Jean McDonald" className="memorial-photo" />
                 <p className="memorial-name">Valerie Jean McDonald</p>
                 <p className="memorial-families">Smith &middot; Bayze &middot; Rocha</p>
                 <p className="memorial-dates">January 15, 1980 &ndash; August 4, 2023</p>
-                <p className="memorial-text">Valerie was a quiet soul who relished the simple pleasures of life. She loved reading and writing, listening to Oldies, getting lost in Sunday Night Slow Jams, and spending time with the people she loved. She had an uncanny ability to find happiness in her daily activities, whether it was exploring Tucson or just being present in a room full of family. That was her gift. She did not need the world to be loud. She just needed it to be real.</p>
-                <p className="memorial-text">She carried the last names Smith, Bayze, and Rocha not because she had to, but because she believed that the people tied to those names were all one family. She refused to let distance, disagreement, or life&#39;s mess separate the people she loved. She held on. Always.</p>
-                <p className="memorial-text">Valerie never married and never had children of her own, but she was great with kids. She loved her siblings and their children fiercely. She was a protector. She helped raise her siblings&#39; kids whenever she had the opportunity, showing up in the quiet ways that mattered most. Not for credit. Not for recognition. Because that is who she was.</p>
-                <p className="memorial-text">She lived with severe narcolepsy and other health challenges for most of her life. She carried that weight without complaint, without excuses, with a resilience that most people never saw because she never asked anyone to see it. Eventually, cancer took her from us. And the world got quieter.</p>
-                <p className="memorial-text emphasis">Losing her forced a reckoning. You begin to understand how fragile time is. You begin to understand that words matter. That forgiveness matters. That family is not optional. It is sacred. It is the whole point.</p>
-                <p className="memorial-text">This movement carries her name because she carried us. Everything we teach about being Grounded was something Valerie already lived before we ever wrote it down. She is woven into the foundation of Back to the Basics. Not as a tribute. As truth.</p>
-                <p style={{ color: "var(--text-dim)", fontSize: "0.9rem", fontStyle: "italic", marginTop: 20 }}>Preceded in death by her father Adrian McDonald. Survived by her Mom and Dad, Sigrid and Mario Rocha, brothers George and Jeremy, sister Priscilla, and many friends and family who will love her until the very end.</p>
+                <div className="memorial-tribute" style={{ fontSize: "1.15rem", lineHeight: 2.2, color: "var(--text)", textAlign: "center", maxWidth: 680, margin: "30px auto 0" }}>
+                  <p>Valerie had a way of lighting up a room without trying.</p>
+                  <p>Not because she was loud, but because her energy was real.</p>
+                  <p>She lived as if hate did not exist. As if no one was out to hurt you.</p>
+                  <p>And because of that, people felt safe around her. Truly safe.</p>
+                  <p>She became a refuge for those who had been hurt. A place where broken people could breathe again.</p>
+                  <p>She loved deeply. She gave freely. And she never needed recognition to do either.</p>
+                  <p>There was a quiet power in her presence. The kind you do not question. You feel.</p>
+                  <p style={{ color: "var(--gold)", fontStyle: "italic", marginTop: 20 }}>Valerie reminds us that strength is not always force. Sometimes, it is a light that makes others feel whole again.</p>
+                </div>
+                <p style={{ color: "var(--text-dim)", fontSize: "0.9rem", fontStyle: "italic", marginTop: 30 }}>Preceded in death by her father Adrian McDonald. Survived by her Mom and Dad, Sigrid and Mario Rocha, brothers George and Jeremy, sister Priscilla, and many friends and family who will love her until the very end.</p>
                 <p style={{ color: "var(--gold-dim)", fontSize: "1rem", marginTop: 16, fontStyle: "italic" }}>We love you, Valerie. See you again in the next life.</p>
               </div>
 
@@ -891,14 +902,15 @@ export default function Home() {
                 <img src="/images/memorial-betty.jpg" alt="Betty with Tikaani" className="memorial-photo" />
                 <p className="memorial-name">Betty J Wittels</p>
                 <p className="memorial-dates">April 21, 1951 &ndash; February 10, 2026</p>
-                <p className="memorial-text">Betty was a Licensed Professional Counselor and psychotherapist in Tucson, Arizona for over four decades. She worked with children, adolescents, families, and married couples. She specialized in adolescent, marriage, and family therapy. She was fluent in Spanish. Her office was not a sterile room with fluorescent lights. It offered a garden, animals, and an atmosphere designed to make people feel safe enough to be honest. Because that is what Betty demanded. Honesty.</p>
-                <p className="memorial-text">She was not the soft voice in the room. She was the one who looked you in the eye and told you the thing nobody else had the courage to say. And she did not care if it was comfortable. She cared if it was true. There are people in your life who tell you what you want to hear because it is easier. Betty was never one of those people.</p>
-                <p className="memorial-text">She told you when you were wrong. She told you when you were selling yourself short. She told you when you were making excuses instead of making changes. And she did it with a fire that could fill an entire room. Her presence demanded growth. Her honesty sharpened you. Her energy was something you could feel the moment she walked in.</p>
-                <p className="memorial-text emphasis">She was not just light. She was fire. The kind that burns away the things you are hiding behind. The kind that forces you to stand up straight and stop pretending. The kind that leaves you better, even when it stings.</p>
-                <p className="memorial-text">Betty did not raise weak people. She believed in truth, even when it made the room quiet. She pushed. She challenged. She demanded more. And because of that, she built strength in others that they did not even know they had. Her voice still echoes in discipline. In honesty. In accountability. In gratitude that is earned, not performative.</p>
-                <p className="memorial-text">She believed that one&#39;s reaction to life events is a choice. Whether in the mind, emotions, or spirit, all things are possible. She lived that belief every single day.</p>
-                <p className="memorial-text">Back to the Basics exists in part because she refused to let complacency win. This movement carries her courage in everything we say about being Guarded. The willingness to protect what matters. The refusal to water down the truth. The backbone to say the real thing when it would be easier to say nothing.</p>
-                <p style={{ color: "var(--gold-dim)", fontSize: "1rem", marginTop: 16, fontStyle: "italic" }}>She lived Guarded, Grounded, and Grateful before we ever wrote it down. She just called it being real.</p>
+                <div className="memorial-tribute" style={{ fontSize: "1.15rem", lineHeight: 2.2, color: "var(--text)", textAlign: "center", maxWidth: 680, margin: "30px auto 0" }}>
+                  <p>Betty did not speak to comfort people. She spoke to wake them up.</p>
+                  <p>She told the truth, even when it was uncomfortable.</p>
+                  <p>Not to tear people down, but to build them into something stronger.</p>
+                  <p>She saw through excuses. And she challenged people to rise above them.</p>
+                  <p>Her presence demanded growth. Her honesty sharpened everyone around her.</p>
+                  <p style={{ color: "var(--gold)", fontStyle: "italic", marginTop: 20 }}>Betty reminds us that real love does not always feel soft. Sometimes, it feels like truth you cannot ignore.</p>
+                </div>
+                <p style={{ color: "var(--gold-dim)", fontSize: "1rem", marginTop: 30, fontStyle: "italic" }}>She lived Guarded, Grounded, and Grateful before we ever wrote it down. She just called it being real.</p>
                 <p style={{ color: "var(--text-dim)", fontSize: "0.88rem", marginTop: 20, fontStyle: "italic" }}>Pictured with Tikaani (meaning &ldquo;wolf&rdquo; in Alaskan Inuit), her Akita/Husky and certified service dog who passed December 12, 2018 at age 14. Her spirit still lives.</p>
               </div>
             </div>

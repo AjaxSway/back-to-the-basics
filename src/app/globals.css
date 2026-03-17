@@ -17,6 +17,19 @@ h3.voice-dim, h3.voice-highlight, h4.voice-dim, h4.voice-highlight,
   color: #f5d89a !important;
   text-shadow: 0 0 12px rgba(202,144,61,0.6), 0 0 30px rgba(202,144,61,0.3);
 }
+/* Fundamentals — extra glow when highlighted */
+.fundamental-word {
+  transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease, transform 0.5s ease;
+  margin: 0;
+}
+.fundamental-word.voice-highlight {
+  color: #f5d89a !important;
+  text-shadow: 0 0 20px rgba(202,144,61,0.8), 0 0 50px rgba(202,144,61,0.4), 0 0 80px rgba(202,144,61,0.2);
+  transform: scale(1.08);
+}
+.fundamental-word.voice-dim {
+  opacity: 0.3;
+}
 
 /* Prevent orphan words — no single word dangling alone on the last line */
 p, h1, h2, h3, h4, li, .memorial-text, .pillar-desc p, .perk-text, .testimonial-body {
