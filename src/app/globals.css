@@ -779,12 +779,17 @@ section.voice-reading .reveal { opacity: 1; transform: translateY(0); }
 }
 
 .enter-hint {
+  position: absolute;
+  bottom: max(7%, 40px);
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 3;
   font-size: 0.78rem;
-  color: rgba(202,168,110,0.85);
+  color: rgba(202,168,110,0.9);
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  margin-top: 18px;
-  text-shadow: 0 0 12px rgba(0,0,0,0.9);
+  text-shadow: 0 0 16px rgba(0,0,0,1), 0 0 30px rgba(0,0,0,0.8);
   animation: fadeUp 1.8s ease-out 1.2s both;
 }
 
