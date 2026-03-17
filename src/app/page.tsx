@@ -26,6 +26,8 @@ function useVoiceSystem(entered: boolean) {
   const playAndScrollRef = useRef<((id: string, force?: boolean) => Promise<void>) | null>(null);
   const bootedRef = useRef(false); // true after first section starts — blocks observer during startup
   const highlightTimerRef = useRef<number | null>(null);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   // Check localStorage on mount
   useEffect(() => {
