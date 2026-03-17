@@ -1121,7 +1121,7 @@ export default function Home() {
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand-col">
-              <img src="/images/footer-brand-logo.jpg" alt="Back to the Basics" />
+              <img src="/images/footer-brand-logo.jpg" alt="Back to the Basics" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ cursor: "pointer" }} />
               <p className="footer-brand-name">Back to the Basics Movement</p>
               <p className="footer-brand-tag">Guarded &middot; Grounded &middot; Grateful</p>
               <p className="footer-brand-desc">A personal development and education movement rooted in discipline, truth, gratitude, and shared testimony. Not a brand. A structure.</p>
@@ -1147,7 +1147,7 @@ export default function Home() {
               <div style={{ marginTop: 20 }}>
                 <h4 style={{ fontSize: "0.75rem", color: "var(--gold-dim)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>Follow</h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <a href="https://www.facebook.com/backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Facebook</a>
+                  <a href="https://www.facebook.com/profile.php?id=61584977363792" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Facebook</a>
                   <a href="https://www.instagram.com/backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>Instagram</a>
                   <a href="https://x.com/backtobasics_mv" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>X</a>
                   <a href="https://www.youtube.com/@backtothebasicsmovement" target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>YouTube</a>
