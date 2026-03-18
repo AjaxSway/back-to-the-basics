@@ -162,7 +162,7 @@ function useVoiceSystem(entered: boolean) {
         }
         // Highlight text as voice reads — paragraph-level only (skip memorial — no highlights, just voice)
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-        if (el && audio && sectionId !== "memorial") {
+        if (el && audio) {
           const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
           if (textEls.length > 0) {
             el.classList.add("voice-reading");
@@ -390,7 +390,7 @@ function useAmbientMusic(enabled: boolean) {
   const playingRef = useRef(false);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
-  const targetVol = 0.008; // Lowered — voice must stay above music
+  const targetVol = 0.06; // Audible but stays beneath voice
   const fadeDuration = 3;
 
   // Create audio element once
@@ -898,17 +898,13 @@ export default function Home() {
                 <p className="memorial-name">Valerie Jean McDonald</p>
                 <p className="memorial-families">Smith &middot; Bayze &middot; Rocha</p>
                 <p className="memorial-dates">January 15, 1980 &ndash; August 4, 2023</p>
-                <div className="memorial-tribute" style={{ fontSize: "1.15rem", lineHeight: 2.2, color: "var(--text)", textAlign: "center", maxWidth: 680, margin: "30px auto 0" }}>
-                  <p>Valerie had a way of lighting up a room without trying.</p>
-                  <p>Not because she was loud, but because her energy was real.</p>
-                  <p>She lived as if hate did not exist. As if no one was out to hurt you.</p>
-                  <p>And because of that, people felt safe around her. Truly safe.</p>
-                  <p>She became a refuge for those who had been hurt. A place where broken people could breathe again.</p>
-                  <p>She loved deeply. She gave freely. And she never needed recognition to do either.</p>
-                  <p>There was a quiet power in her presence. The kind you do not question. You feel.</p>
-                  <p style={{ color: "var(--gold)", fontStyle: "italic", marginTop: 20 }}>Valerie reminds us that strength is not always force. Sometimes, it is a light that makes others feel whole again.</p>
-                </div>
-                <p style={{ color: "var(--text-dim)", fontSize: "0.9rem", fontStyle: "italic", marginTop: 30 }}>Preceded in death by her father Adrian McDonald. Survived by her Mom and Dad, Sigrid and Mario Rocha, brothers George and Jeremy, sister Priscilla, and many friends and family who will love her until the very end.</p>
+                <p className="memorial-text">Valerie was a quiet soul who relished the simple pleasures of life. She loved reading and writing, listening to Oldies, getting lost in Sunday Night Slow Jams, and spending time with the people she loved. She had an uncanny ability to find happiness in her daily activities, whether it was exploring Tucson or just being present in a room full of family. That was her gift. She did not need the world to be loud. She just needed it to be real.</p>
+                <p className="memorial-text">She carried the last names Smith, Bayze, and Rocha not because she had to, but because she believed that the people tied to those names were all one family. She refused to let distance, disagreement, or life&#39;s mess separate the people she loved. She held on. Always.</p>
+                <p className="memorial-text">Valerie never married and never had children of her own, but she was great with kids. She loved her siblings and their children fiercely. She was a protector. She helped raise her siblings&#39; kids whenever she had the opportunity, showing up in the quiet ways that mattered most. Not for credit. Not for recognition. Because that is who she was.</p>
+                <p className="memorial-text">She lived with severe narcolepsy and other health challenges for most of her life. She carried that weight without complaint, without excuses, with a resilience that most people never saw because she never asked anyone to see it. Eventually, cancer took her from us. And the world got quieter.</p>
+                <p className="memorial-text emphasis">Losing her forced a reckoning. You begin to understand how fragile time is. You begin to understand that words matter. That forgiveness matters. That family is not optional. It is sacred. It is the whole point.</p>
+                <p className="memorial-text">This movement carries her name because she carried us. Everything we teach about being Grounded was something Valerie already lived before we ever wrote it down. She is woven into the foundation of Back to the Basics. Not as a tribute. As truth.</p>
+                <p style={{ color: "var(--text-dim)", fontSize: "0.9rem", fontStyle: "italic", marginTop: 20 }}>Preceded in death by her father Adrian McDonald. Survived by her Mom and Dad, Sigrid and Mario Rocha, brothers George and Jeremy, sister Priscilla, and many friends and family who will love her until the very end.</p>
                 <p style={{ color: "var(--gold-dim)", fontSize: "1rem", marginTop: 16, fontStyle: "italic" }}>We love you, Valerie. See you again in the next life.</p>
               </div>
 
@@ -917,15 +913,14 @@ export default function Home() {
                 <img src="/images/memorial-betty.jpg" alt="Betty with Tikaani" className="memorial-photo" />
                 <p className="memorial-name">Betty J Wittels</p>
                 <p className="memorial-dates">April 21, 1951 &ndash; February 10, 2026</p>
-                <div className="memorial-tribute" style={{ fontSize: "1.15rem", lineHeight: 2.2, color: "var(--text)", textAlign: "center", maxWidth: 680, margin: "30px auto 0" }}>
-                  <p>Betty did not speak to comfort people. She spoke to wake them up.</p>
-                  <p>She told the truth, even when it was uncomfortable.</p>
-                  <p>Not to tear people down, but to build them into something stronger.</p>
-                  <p>She saw through excuses. And she challenged people to rise above them.</p>
-                  <p>Her presence demanded growth. Her honesty sharpened everyone around her.</p>
-                  <p style={{ color: "var(--gold)", fontStyle: "italic", marginTop: 20 }}>Betty reminds us that real love does not always feel soft. Sometimes, it feels like truth you cannot ignore.</p>
-                </div>
-                <p style={{ color: "var(--gold-dim)", fontSize: "1rem", marginTop: 30, fontStyle: "italic" }}>She lived Guarded, Grounded, and Grateful before we ever wrote it down. She just called it being real.</p>
+                <p className="memorial-text">Betty was a Licensed Professional Counselor and psychotherapist in Tucson, Arizona for over four decades. She worked with children, adolescents, families, and married couples. She specialized in adolescent, marriage, and family therapy. She was fluent in Spanish. Her office was not a sterile room with fluorescent lights. It offered a garden, animals, and an atmosphere designed to make people feel safe enough to be honest. Because that is what Betty demanded. Honesty.</p>
+                <p className="memorial-text">She was not the soft voice in the room. She was the one who looked you in the eye and told you the thing nobody else had the courage to say. And she did not care if it was comfortable. She cared if it was true. There are people in your life who tell you what you want to hear because it is easier. Betty was never one of those people.</p>
+                <p className="memorial-text">She told you when you were wrong. She told you when you were selling yourself short. She told you when you were making excuses instead of making changes. And she did it with a fire that could fill an entire room. Her presence demanded growth. Her honesty sharpened you. Her energy was something you could feel the moment she walked in.</p>
+                <p className="memorial-text emphasis">She was not just light. She was fire. The kind that burns away the things you are hiding behind. The kind that forces you to stand up straight and stop pretending. The kind that leaves you better, even when it stings.</p>
+                <p className="memorial-text">Betty did not raise weak people. She believed in truth, even when it made the room quiet. She pushed. She challenged. She demanded more. And because of that, she built strength in others that they did not even know they had. Her voice still echoes in discipline. In honesty. In accountability. In gratitude that is earned, not performative.</p>
+                <p className="memorial-text">She believed that one&#39;s reaction to life events is a choice. Whether in the mind, emotions, or spirit, all things are possible. She lived that belief every single day.</p>
+                <p className="memorial-text">Back to the Basics exists in part because she refused to let complacency win. This movement carries her courage in everything we say about being Guarded. The willingness to protect what matters. The refusal to water down the truth. The backbone to say the real thing when it would be easier to say nothing.</p>
+                <p style={{ color: "var(--gold-dim)", fontSize: "1rem", marginTop: 16, fontStyle: "italic" }}>She lived Guarded, Grounded, and Grateful before we ever wrote it down. She just called it being real.</p>
                 <p style={{ color: "var(--text-dim)", fontSize: "0.88rem", marginTop: 20, fontStyle: "italic" }}>Pictured with Tikaani (meaning &ldquo;wolf&rdquo; in Alaskan Inuit), her Akita/Husky and certified service dog who passed December 12, 2018 at age 14. Her spirit still lives.</p>
               </div>
             </div>
