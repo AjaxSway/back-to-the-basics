@@ -930,6 +930,7 @@ section.voice-reading .reveal { opacity: 1; transform: translateY(0); }
     display: none; position: absolute; top: 100%; left: 0; right: 0;
     background: rgba(5,4,3,0.97); flex-direction: column;
     padding: 20px 40px; gap: 16px;
+    z-index: 100;
   }
   .nav-links.show { display: flex; }
   .nav-toggle { display: block; }
