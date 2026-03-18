@@ -160,10 +160,11 @@ function useVoiceSystem(entered: boolean) {
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Highlight text as voice reads — paragraph-level only (skip memorial — no highlights, just voice)
+        // Highlight text as voice reads — paragraph-level only
+        // Skip memorial — voiceover reads a poetic tribute while the full bios are displayed
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-        if (el && audio) {
-          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")) as HTMLElement[];
+        if (el && audio && sectionId !== "memorial") {
+          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
           if (textEls.length > 0) {
             el.classList.add("voice-reading");
             textEls.forEach(t => t.classList.add("voice-dim"));
@@ -867,9 +868,9 @@ export default function Home() {
           <div className="founder-section">
             {/* Ivette */}
             <div style={{ maxWidth: 720, margin: "60px auto 50px", textAlign: "center" }}>
-              <p style={{ fontSize: "0.82rem", fontWeight: 600, letterSpacing: 5, textTransform: "uppercase", color: "var(--gold)", marginBottom: 16 }}>The Foundation</p>
-              <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2.4rem", color: "var(--text-bright)", fontWeight: 300, marginBottom: 8 }}>Ivette Bayze</h3>
-              <p style={{ fontSize: "0.9rem", color: "var(--gold)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>Wife &middot; Mother &middot; Foundation</p>
+              <p data-no-highlight style={{ fontSize: "0.82rem", fontWeight: 600, letterSpacing: 5, textTransform: "uppercase", color: "var(--gold)", marginBottom: 16 }}>The Foundation</p>
+              <h3 data-no-highlight style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2.4rem", color: "var(--text-bright)", fontWeight: 300, marginBottom: 8 }}>Ivette Bayze</h3>
+              <p data-no-highlight style={{ fontSize: "0.9rem", color: "var(--gold)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>Wife &middot; Mother &middot; Foundation</p>
               <div className="gold-line" />
               <div style={{ fontSize: "1.1rem", lineHeight: 2.1, color: "var(--text)", textAlign: "center", maxWidth: 720, margin: "0 auto" }}>
                 <p>Ivette is not a memory. She is the&nbsp;anchor.</p>
@@ -885,7 +886,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 7b. MEMORIAL — narrated with George's voice, no highlighting */}
+      {/* 7b. MEMORIAL — full bios displayed, George's poetic voiceover plays as audio overlay (no highlighting — audio doesn't match text) */}
       <section id="memorial" className={sc("memorial")} style={{ borderTop: "1px solid rgba(202,144,61,0.06)" }}>
         <div className="content-mid reveal">
           <div className="founder-section">
