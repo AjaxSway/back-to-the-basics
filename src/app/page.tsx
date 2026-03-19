@@ -188,7 +188,7 @@ function useVoiceSystem(entered: boolean) {
               }
               // Lag the highlight slightly so it doesn't jump ahead of the voice
               const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const progress = Math.max(0, rawProgress * 0.93);
+              const progress = Math.max(0, rawProgress * 0.88);
               let activeIdx = 0;
               for (let i = 0; i < cumulative.length; i++) {
                 if (progress < cumulative[i] - 0.02) { activeIdx = i; break; }
