@@ -3,31 +3,39 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* VOICE HIGHLIGHT — lights up current paragraph as voice reads */
-.vw, p.voice-dim, p.voice-highlight, h2.voice-dim, h2.voice-highlight,
-h3.voice-dim, h3.voice-highlight, h4.voice-dim, h4.voice-highlight,
-.memorial-text.voice-dim, .memorial-text.voice-highlight {
-  transition: color 0.3s ease, opacity 0.3s ease, text-shadow 0.3s ease;
+/* VOICE HIGHLIGHT — word-level karaoke: lights up each word as voice reads */
+.vw {
+  transition: color 0.15s ease, opacity 0.15s ease, text-shadow 0.15s ease;
 }
-.voice-dim {
+/* When a section is being read, dim all words by default */
+.voice-reading .vw {
   opacity: 0.25;
 }
-.voice-highlight {
-  opacity: 1;
+/* Current word — gold glow */
+.vw.vw-active {
+  opacity: 1 !important;
   color: #f5d89a !important;
   text-shadow: 0 0 12px rgba(202,144,61,0.6), 0 0 30px rgba(202,144,61,0.3);
 }
-/* Fundamentals — extra glow when highlighted */
+/* Already-read words — normal brightness */
+.vw.vw-read {
+  opacity: 0.85;
+  color: inherit;
+  text-shadow: none;
+}
+/* Fundamentals — extra glow and scale when active */
 .fundamental-word {
   transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease, transform 0.5s ease;
   margin: 0;
 }
-.fundamental-word.voice-highlight {
+.fundamental-word .vw.vw-active {
   color: #f5d89a !important;
   text-shadow: 0 0 20px rgba(202,144,61,0.8), 0 0 50px rgba(202,144,61,0.4), 0 0 80px rgba(202,144,61,0.2);
+}
+.voice-reading .fundamental-word:has(.vw-active) {
   transform: scale(1.08);
 }
-.fundamental-word.voice-dim {
+.voice-reading .fundamental-word:not(:has(.vw-active)):not(:has(.vw-read)) {
   opacity: 0.3;
 }
 

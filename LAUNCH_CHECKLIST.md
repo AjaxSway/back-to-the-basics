@@ -16,7 +16,7 @@
 - [ ] Enter a test email (e.g. test+check@gmail.com)
 - [ ] Click **Join**
 - [ ] See: **"You're In"** confirmation
-- [ ] If you see "Something went wrong" — STOP, tell Claude "Step 3 failed"
+- [ ] If you see "Something went wrong" — STOP, tell CORTEX "Step 3 failed"
 
 ### 4. Check Your Inbox
 - [ ] Open **contact@backtothebasicsmovement.com** inbox
@@ -25,7 +25,7 @@
 ### 5. Check Auto-Reply
 - [ ] Check the test email inbox you used in Step 3
 - [ ] Confirm it received: "Welcome to Back to the Basics Movement"
-- [ ] If no auto-reply arrived — tell Claude "Step 5 failed"
+- [ ] If no auto-reply arrived — tell CORTEX "Step 5 failed"
 
 ### 6. Share Your Story
 - [ ] Fill out the Story form (name + short message)
@@ -49,13 +49,13 @@
 ## Result
 
 **All 8 pass** → Safe to show anyone.
-**Any step fails** → Tell Claude exactly which step number failed. Example: "Step 3 failed — subscribe form returned error"
+**Any step fails** → Tell CORTEX exactly which step number failed. Example: "Step 3 failed — subscribe form returned error"
 
 ---
 
-## Automated Developer Check (run in Claude)
+## Automated Developer Check (run in CORTEX)
 
-Paste this to Claude for a 30-second system-wide health check:
+Paste this to CORTEX for a 30-second system-wide health check:
 
 ```
 Run a full production health check on backtothebasicsmovement.com:
