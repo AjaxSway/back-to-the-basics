@@ -140,7 +140,7 @@ function useVoiceSystem(entered: boolean) {
         const audio = audioRef.current;
         if (el && audio && autoScrollRef.current) {
           // Memorial: slower lerp so Valerie and Betty bios scroll at a readable pace
-          const lerpSpeed = sectionId === "memorial" ? 0.015 : sectionId === "founder" ? 0.04 : 0.06;
+          const baseLerpSpeed = sectionId === "memorial" ? 0.015 : sectionId === "founder" ? 0.04 : 0.06;
           let currentY = window.scrollY;
           const tick = () => {
             if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
@@ -156,8 +156,16 @@ function useVoiceSystem(entered: boolean) {
             const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
             const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
             const targetY = anchorTop + scrollRange * progress;
-            // Lerp toward target — memorial scrolls slower for readability
-            currentY += (targetY - currentY) * lerpSpeed;
+            // Memorial: decelerate in second half to prevent fast scroll at end
+            let lerpSpeed = baseLerpSpeed;
+            if (sectionId === "memorial" && progress > 0.5) {
+              const decel = 1 - (progress - 0.5) * 1.4; // ramps from 1.0 down to 0.3 at end
+              lerpSpeed = baseLerpSpeed * Math.max(0.3, decel);
+            }
+            // Lerp toward target — cap max scroll per frame to prevent jumps
+            const delta = (targetY - currentY) * lerpSpeed;
+            const maxStep = sectionId === "memorial" ? 2.5 : 8;
+            currentY += Math.sign(delta) * Math.min(Math.abs(delta), maxStep);
             window.scrollTo(0, Math.round(currentY));
             scrollTimerRef.current = requestAnimationFrame(tick);
           };
@@ -218,7 +226,10 @@ function useVoiceSystem(entered: boolean) {
                   if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
                   return;
                 }
-                const progress = Math.min(1, (audio.currentTime / audio.duration) * 1.02);
+                // Offset: delay highlight by ~2 sentences worth of time to sync with spoken audio
+                const highlightOffset = 0.065; // fraction of total duration to delay highlights
+                const rawProgress = audio.currentTime / audio.duration;
+                const progress = Math.min(1, Math.max(0, rawProgress - highlightOffset) / (1 - highlightOffset));
                 let activeIdx = 0;
                 for (let i = 0; i < cumulative.length; i++) {
                   if (progress < cumulative[i]) { activeIdx = i; break; }

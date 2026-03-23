@@ -12,7 +12,7 @@
 /* GOLD GLOW — continuous glow on key messages */
 .gold-glow {
   color: var(--gold-bright) !important;
-  text-shadow: 0 0 12px rgba(202,144,61,0.5), 0 0 30px rgba(202,144,61,0.25), 0 0 60px rgba(202,144,61,0.1);
+  text-shadow: 0 0 8px rgba(202,144,61,0.7), 0 0 20px rgba(202,144,61,0.55), 0 0 45px rgba(202,144,61,0.35), 0 0 80px rgba(202,144,61,0.2), 0 0 120px rgba(202,144,61,0.1);
 }
 
 /* Italic emphasis text — stand out more */
