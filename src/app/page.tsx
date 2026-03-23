@@ -905,12 +905,12 @@ export default function Home() {
           <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: 1.95, maxWidth: 700, margin: "0 auto", textAlign: "center" }}>Because wisdom is not owned. It is shared. And there is power in testimony that no textbook could ever replace.</p>
           <div className="education-grid">
             {[
-              { title: "Discipline Challenges", desc: "Step beyond comfort and into structure. Build consistency. Strengthen your habits. Track real progress week over week.", action: "Start the challenge", featured: true },
-              { title: "Community Discussions", desc: "Real conversations about life, growth, and discipline. No judgment. No filters. Just truth and support.", action: "Join the conversation", featured: false },
-              { title: "Personal Growth Workshops", desc: "Build habits that last. Break cycles that hold you back. Practical tools for real life, from the inside out.", action: "Explore workshops", featured: false },
-              { title: "Story Submissions", desc: "Your story carries weight. Share your lesson, your turning point, your growth. Someone out there needs to hear it.", action: "Share your story", featured: false },
-              { title: "Faith-Centered Reflections", desc: "Slow down and reconnect. Reflect with intention. Rooted in faith. Open to all.", action: "Begin reflection", featured: false },
-              { title: "Leadership Development", desc: "Lead yourself first. Then lead others with clarity, discipline, and integrity. Step into responsibility with purpose.", action: "Step into leadership", featured: false },
+              { title: "The Proving Ground", desc: "30-day structured challenges that test what you say you believe. Morning routines. Financial discipline. Fitness accountability. Real metrics. Real results. No shortcuts.", action: "ENTER THE PROVING GROUND", featured: true },
+              { title: "The Roundtable", desc: "A place where men and women sit as equals and speak the truth. No judgment. No performance. Just honest conversation about what life actually looks like behind closed doors.", action: "PULL UP A CHAIR", featured: false },
+              { title: "The Foundation Lab", desc: "Practical workshops on the things nobody taught you. Budgeting. Communication. Parenting. Self-leadership. Built for people who are tired of theory and ready for tools.", action: "BUILD YOUR FOUNDATION", featured: false },
+              { title: "The Testimony Wall", desc: "Your story is not a weakness. It is a weapon. Submit your turning point, your lesson, your comeback. Someone out there is fighting the exact battle you already survived.", action: "SHARE YOUR TESTIMONY", featured: false },
+              { title: "The Quiet Room", desc: "Not a sermon. Not a lecture. A space to slow down, reflect, and reconnect with something bigger than yourself. Rooted in faith. Open to everyone. Judgment-free.", action: "STEP INTO STILLNESS", featured: false },
+              { title: "The Officer's Table", desc: "You cannot lead others until you can lead yourself. Principles of accountability, decision-making, and integrity. Built for fathers, managers, coaches, and anyone ready to carry weight with purpose.", action: "TAKE YOUR SEAT", featured: false },
             ].map((card) => (
               <div key={card.title} className={`edu-card${card.featured ? " edu-featured" : ""}`}>
                 <h4 data-no-highlight>{card.title}</h4>
@@ -1035,19 +1035,19 @@ export default function Home() {
           <div className="newsletter-perks">
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5L10 14.7l-4.9 2.5.9-5.5-4-3.9 5.5-.8z" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.12)" /></svg></div>
-              <div data-no-highlight className="perk-text"><strong>Weekly Inspiration</strong>A fresh word to carry with you. Original reflections written from real life experience, not recycled internet quotes.</div>
+              <div data-no-highlight className="perk-text"><strong>THE DAILY DOCTRINE</strong>One principle. Every morning. 365 days of real-world wisdom built from failure, recovery, and hard-won lessons. Not quotes from the internet. Words forged in the fire.</div>
             </div>
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.06)" /><line x1="6" y1="6" x2="14" y2="6" stroke="#ca903d" strokeWidth="1" opacity="0.5" /><line x1="6" y1="9" x2="14" y2="9" stroke="#ca903d" strokeWidth="1" opacity="0.5" /><line x1="6" y1="12" x2="11" y2="12" stroke="#ca903d" strokeWidth="1" opacity="0.5" /></svg></div>
-              <div data-no-highlight className="perk-text"><strong>Exclusive Reflections</strong>Deeper writings and personal stories that only subscribers experience. These do not get posted anywhere else.</div>
+              <div data-no-highlight className="perk-text"><strong>THE INNER CIRCLE</strong>Stories that never go public. The raw, unfiltered moments behind the growth. What it actually looked like when everything fell apart and had to be rebuilt. Subscribers only.</div>
             </div>
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.06)" /><path d="M7 7c0-1.5 1.3-2.5 3-2.5s3 1 3 2.5-1.3 2-3 2.5V12" stroke="#ca903d" strokeWidth="1.2" strokeLinecap="round" /><circle cx="10" cy="14" r="0.8" fill="#ca903d" /></svg></div>
-              <div data-no-highlight className="perk-text"><strong>First Access</strong>New content, events, merch drops, collaborations. Subscribers hear about it first before it goes public.</div>
+              <div data-no-highlight className="perk-text"><strong>FIRST TO THE TABLE</strong>New chapters, events, merch, and collaborations. You hear about it before anyone else. Because the people who showed up first deserve to sit closest.</div>
             </div>
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v7l4.5 2.5" stroke="#ca903d" strokeWidth="1.5" strokeLinecap="round" /><circle cx="10" cy="10" r="7.5" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.06)" /></svg></div>
-              <div data-no-highlight className="perk-text"><strong>Monthly Challenges</strong>Guided prompts to stretch your mindset, strengthen your foundation, and grow your roots deeper every month.</div>
+              <div data-no-highlight className="perk-text"><strong>THE 30-DAY FORGE</strong>One focused challenge each month. Discipline. Accountability. Growth. Track your progress. Share your results. Prove to yourself that you are capable of more than you think.</div>
             </div>
           </div>
           {newsletterSubmitted ? (
