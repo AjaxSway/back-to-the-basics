@@ -164,64 +164,102 @@ function useVoiceSystem(entered: boolean) {
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Paragraph-level highlight — lights up each paragraph as the voice reads it
+        // Word-level highlight — lights up each word as the voice reads it
         // Skip memorial — voiceover reads a poetic tribute while bios are displayed
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
         if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
         if (el && audio && sectionId !== "memorial") {
-          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text, .fundamental-word")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
+          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
           if (textEls.length > 0) {
             el.classList.add("voice-reading");
-            // Tag each element for paragraph-level highlighting
-            textEls.forEach(t => t.classList.add("hl-para"));
+            const originals = new Map<HTMLElement, string>();
+            textEls.forEach(t => originals.set(t, t.innerHTML));
 
-            // Weight each paragraph by text length (proxy for speech duration)
-            const weights = textEls.map(t => {
-              const len = (t.textContent || "").trim().length;
-              return Math.max(len, 10) + 15; // base + pause between paragraphs
-            });
-            const totalWeight = weights.reduce((a, b) => a + b, 0);
-            const cumulative: number[] = [];
-            let wSum = 0;
-            for (const w of weights) { wSum += w / totalWeight; cumulative.push(wSum); }
+            // Wrap every word in a <span class="vw">
+            const allWords: HTMLSpanElement[] = [];
+            const paragraphStarts: number[] = [0];
 
-            let lastActiveIdx = -1;
-            const hlTick = () => {
-              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
-                return;
-              }
-              const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              // End highlighting slightly before audio ends (voice trails off)
-              const progress = Math.max(0, rawProgress * 0.88);
-              let activeIdx = 0;
-              for (let i = 0; i < cumulative.length; i++) {
-                if (progress < cumulative[i]) { activeIdx = i; break; }
-                activeIdx = i;
-              }
-              if (activeIdx !== lastActiveIdx) {
-                // Mark previous paragraphs as read
-                for (let i = Math.max(0, lastActiveIdx); i < activeIdx; i++) {
-                  textEls[i].classList.remove("hl-active");
-                  textEls[i].classList.add("hl-read");
+            for (const textEl of textEls) {
+              const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, null);
+              const textNodes: Text[] = [];
+              while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+              for (const node of textNodes) {
+                const text = node.textContent;
+                if (!text || !text.trim()) continue;
+                const frag = document.createDocumentFragment();
+                const parts = text.split(/(\s+)/);
+                for (const part of parts) {
+                  if (/^\s+$/.test(part) || part === "") {
+                    frag.appendChild(document.createTextNode(part));
+                  } else {
+                    const span = document.createElement("span");
+                    span.className = "vw";
+                    span.textContent = part;
+                    frag.appendChild(span);
+                    allWords.push(span);
+                  }
                 }
-                if (lastActiveIdx >= 0 && lastActiveIdx < textEls.length) {
-                  textEls[lastActiveIdx].classList.remove("hl-active");
-                  textEls[lastActiveIdx].classList.add("hl-read");
-                }
-                // Light up current paragraph
-                textEls[activeIdx].classList.add("hl-active");
-                textEls[activeIdx].classList.remove("hl-read");
-                lastActiveIdx = activeIdx;
+                node.parentNode!.replaceChild(frag, node);
               }
+              paragraphStarts.push(allWords.length);
+            }
+
+            if (allWords.length > 0) {
+              // Simple syllable estimate: every ~3 characters is roughly one syllable
+              // Speech rate is fairly constant per syllable, so character count is a good proxy
+              const weights = allWords.map((span, i) => {
+                const word = span.textContent || "";
+                // Base weight: character count (proxy for syllables/speech time)
+                let w = word.length;
+                // Sentence endings — natural pause
+                if (/[.!?]$/.test(word)) w += 6;
+                // Commas, colons — slight pause
+                if (/[,;:]$/.test(word)) w += 3;
+                // Paragraph boundaries — breath pause
+                if (paragraphStarts.includes(i + 1)) w += 10;
+                return Math.max(w, 2);
+              });
+
+              const totalWeight = weights.reduce((a, b) => a + b, 0);
+              const cumulative: number[] = [];
+              let wSum = 0;
+              for (const w of weights) { wSum += w / totalWeight; cumulative.push(wSum); }
+
+              let lastActiveIdx = -1;
+              const hlTick = () => {
+                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                  if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
+                  return;
+                }
+                const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+                // Tiny lead (2%) keeps highlighting feeling "on time" vs the voice
+                const progress = Math.min(1, rawProgress * 1.02);
+                let activeIdx = 0;
+                for (let i = 0; i < cumulative.length; i++) {
+                  if (progress < cumulative[i]) { activeIdx = i; break; }
+                  activeIdx = i;
+                }
+                if (activeIdx !== lastActiveIdx) {
+                  for (let i = Math.max(0, lastActiveIdx); i < activeIdx; i++) {
+                    allWords[i].classList.remove("vw-active");
+                    allWords[i].classList.add("vw-read");
+                  }
+                  if (lastActiveIdx >= 0 && lastActiveIdx < allWords.length) {
+                    allWords[lastActiveIdx].classList.remove("vw-active");
+                    allWords[lastActiveIdx].classList.add("vw-read");
+                  }
+                  allWords[activeIdx].classList.add("vw-active");
+                  allWords[activeIdx].classList.remove("vw-read");
+                  lastActiveIdx = activeIdx;
+                }
+                highlightTimerRef.current = requestAnimationFrame(hlTick);
+              };
               highlightTimerRef.current = requestAnimationFrame(hlTick);
-            };
-            highlightTimerRef.current = requestAnimationFrame(hlTick);
+            }
 
-            // Cleanup — remove highlight classes
             wordCleanupRef.current = () => {
               el.classList.remove("voice-reading");
-              textEls.forEach(t => { t.classList.remove("hl-para", "hl-active", "hl-read"); });
+              originals.forEach((html, elem) => { elem.innerHTML = html; });
             };
           }
         }
@@ -749,11 +787,11 @@ export default function Home() {
           </div>
           <p style={{ textAlign: "center", fontSize: "1.2rem", maxWidth: 720, margin: "0 auto 20px" }}>This is not about perfection. It is about alignment. Not about image. About integrity. Not about following blindly. About waking up intentionally.</p>
           <p style={{ textAlign: "center", fontSize: "1.2rem", maxWidth: 720, margin: "0 auto 20px" }}>This movement is personal. This movement is purposeful. This is our&nbsp;foundation.</p>
-          <div style={{ textAlign: "center", fontSize: "1.8rem", lineHeight: 2.2, letterSpacing: 1, color: "var(--text-bright)", fontWeight: 400 }}>
+          <p style={{ textAlign: "center", fontSize: "1.8rem", lineHeight: 2.2, letterSpacing: 1, color: "var(--text-bright)", fontWeight: 400 }}>
             This movement is not built on personality.<br />
             It is built on principle.<br />
             And principles outlive people.
-          </div>
+          </p>
         </div>
       </section>
 
@@ -834,7 +872,7 @@ export default function Home() {
             <div style={{ maxWidth: 720, margin: "0 auto 80px", textAlign: "center" }}>
               <img src="/images/founder_lantern_stewardship.png" alt="The Heart Behind the Foundation - Lantern at sunset" className="anchor-visual-img" style={{ maxWidth: 960, marginBottom: 50 }} />
               <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "3.2rem", color: "var(--text-bright)", fontWeight: 300, marginBottom: 12 }}>George Bayze</h3>
-              <p style={{ fontSize: "1.1rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 40 }}>Vision Steward</p>
+              <p data-no-highlight style={{ fontSize: "1.1rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 40 }}>Vision Steward</p>
 
               <div style={{ maxWidth: 720, margin: "0 auto 60px", fontSize: "1.1rem", lineHeight: 2.1, color: "var(--text)", textAlign: "center" }}>
                 <p>This movement did not start as a business idea. It started as a&nbsp;conviction.</p>
@@ -850,33 +888,33 @@ export default function Home() {
                 <p style={{ color: "var(--text-bright)", fontStyle: "italic" }}>Because principles outlive people. And foundations outlast&nbsp;applause.</p>
               </div>
 
-              {/* The Why — Daughters (voice flows into their pictures) */}
-              <div style={{ marginTop: 60 }}>
-                <p style={{ fontSize: "0.85rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 30, textAlign: "center" }}>The Why</p>
-                <div style={{ display: "flex", gap: 30, justifyContent: "center", flexWrap: "wrap", marginBottom: 30 }}>
-                  <div style={{ textAlign: "center", maxWidth: 250 }}>
-                    <img src="/images/founder-michele-bayze.jpg" alt="Michele Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
-                    <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Michele Bayze</p>
-                  </div>
-                  <div style={{ textAlign: "center", maxWidth: 250 }}>
-                    <img src="/images/founder-alexis-bayze.jpg" alt="Alexis Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
-                    <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Alexis Bayze</p>
-                  </div>
-                  <div style={{ textAlign: "center", maxWidth: 250 }}>
-                    <img src="/images/founder-emma-bayze.jpg" alt="Emma Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
-                    <p style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Emma Bayze</p>
-                  </div>
-                </div>
-                <p style={{ color: "var(--gold)", fontSize: "1.3rem", fontStyle: "italic", marginTop: 30, textAlign: "center", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.9 }}>It tells the world this is not ego driven. It is generational. That makes the movement real.</p>
-              </div>
-
-              {/* FOUNDER VIDEO — plays after voice finishes speech, below daughters */}
+              {/* FOUNDER VIDEO — plays after voice finishes speech */}
               <div className="founder-video-wrapper">
                 <video ref={founderVideoRef} controls playsInline preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
                   <source src="/video/founder-video.mp4" type="video/mp4" />
                   <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
                   Your browser does not support the video tag.
                 </video>
+              </div>
+
+              {/* The Why — Daughters */}
+              <div style={{ marginTop: 60 }}>
+                <p data-no-highlight style={{ fontSize: "0.85rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 30, textAlign: "center" }}>The Why</p>
+                <div style={{ display: "flex", gap: 30, justifyContent: "center", flexWrap: "wrap", marginBottom: 30 }}>
+                  <div style={{ textAlign: "center", maxWidth: 250 }}>
+                    <img src="/images/founder-michele-bayze.jpg" alt="Michele Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                    <p data-no-highlight style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Michele Bayze</p>
+                  </div>
+                  <div style={{ textAlign: "center", maxWidth: 250 }}>
+                    <img src="/images/founder-alexis-bayze.jpg" alt="Alexis Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                    <p data-no-highlight style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Alexis Bayze</p>
+                  </div>
+                  <div style={{ textAlign: "center", maxWidth: 250 }}>
+                    <img src="/images/founder-emma-bayze.jpg" alt="Emma Bayze" style={{ width: 250, maxWidth: "100%", borderRadius: 4, boxShadow: "0 10px 40px rgba(0,0,0,0.4)", border: "1px solid rgba(202,144,61,0.1)" }} />
+                    <p data-no-highlight style={{ fontSize: "1rem", color: "var(--text-bright)", marginTop: 14, letterSpacing: 1 }}>Emma Bayze</p>
+                  </div>
+                </div>
+                <p data-no-highlight style={{ color: "var(--gold)", fontSize: "1.3rem", fontStyle: "italic", marginTop: 30, textAlign: "center", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.9 }}>It tells the world this is not ego driven. It is generational. That makes the movement real.</p>
               </div>
             </div>
 
@@ -974,8 +1012,8 @@ export default function Home() {
               { title: "Leadership Development", desc: "Lead yourself first. Then lead others with clarity, discipline, and integrity. Step into responsibility with purpose.", action: "Step into leadership", featured: false },
             ].map((card) => (
               <div key={card.title} className={`edu-card${card.featured ? " edu-featured" : ""}`}>
-                <h4>{card.title}</h4>
-                <p>{card.desc}</p>
+                <h4 data-no-highlight>{card.title}</h4>
+                <p data-no-highlight>{card.desc}</p>
                 <span className="edu-action">{card.action}</span>
               </div>
             ))}
@@ -1004,7 +1042,7 @@ export default function Home() {
               <div key={t.initial} className="testimonial-card">
                 <div className="testimonial-header">
                   <div className="testimonial-avatar">{t.initial}</div>
-                  <div><p className="testimonial-name">{t.name}</p><p className="testimonial-role">Community Member</p></div>
+                  <div><p data-no-highlight className="testimonial-name">{t.name}</p><p data-no-highlight className="testimonial-role">Community Member</p></div>
                 </div>
                 <p className="testimonial-body">{t.body}</p>
               </div>
@@ -1050,7 +1088,7 @@ export default function Home() {
                 <div className="form-group">
                   <label>Your Story <span style={{ fontSize: "0.7rem", color: "var(--text-dim)" }}>(Max 2,000 characters)</span></label>
                   <textarea className="form-input" name="story" placeholder="Share your experience, your lesson, your turning point. Take your time. Be real." required maxLength={2000} onChange={(e) => setCharCount(e.target.value.length)} />
-                  <p className="char-count">{charCount} / 2,000</p>
+                  <p data-no-highlight className="char-count">{charCount} / 2,000</p>
                 </div>
                 <div className="form-group">
                   <label>A Quote or Lesson That Stuck With You (Optional)</label>
@@ -1069,13 +1107,13 @@ export default function Home() {
           <span className="section-label">The Growth Engine</span>
           <h2 className="section-title">The Standard</h2>
           <p style={{ fontSize: "1.2rem", lineHeight: 2, color: "var(--text)", maxWidth: 720, margin: "0 auto 40px" }}>Each day we return to the same principles.</p>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", fontWeight: 300, color: "var(--text-bright)", lineHeight: 2.6 }}>
+          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", fontWeight: 300, color: "var(--text-bright)", lineHeight: 2.6 }}>
             Clarity in thought.<br />
             Truth in action.<br />
             Discipline in habits.<br />
             Gratitude in perspective.<br />
             Structure in life.
-          </div>
+          </p>
           <div className="gold-line" />
           <p style={{ fontSize: "1.15rem", lineHeight: 2, color: "var(--text)", maxWidth: 720, margin: "0 auto" }}>The Back to the Basics Movement exists to remind us that strength is built daily through these standards.</p>
         </div>
@@ -1096,19 +1134,19 @@ export default function Home() {
           <div className="newsletter-perks">
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5L10 14.7l-4.9 2.5.9-5.5-4-3.9 5.5-.8z" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.12)" /></svg></div>
-              <div className="perk-text"><strong>Weekly Inspiration</strong>A fresh word to carry with you. Original reflections written from real life experience, not recycled internet quotes.</div>
+              <div data-no-highlight className="perk-text"><strong>Weekly Inspiration</strong>A fresh word to carry with you. Original reflections written from real life experience, not recycled internet quotes.</div>
             </div>
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.06)" /><line x1="6" y1="6" x2="14" y2="6" stroke="#ca903d" strokeWidth="1" opacity="0.5" /><line x1="6" y1="9" x2="14" y2="9" stroke="#ca903d" strokeWidth="1" opacity="0.5" /><line x1="6" y1="12" x2="11" y2="12" stroke="#ca903d" strokeWidth="1" opacity="0.5" /></svg></div>
-              <div className="perk-text"><strong>Exclusive Reflections</strong>Deeper writings and personal stories that only subscribers experience. These do not get posted anywhere else.</div>
+              <div data-no-highlight className="perk-text"><strong>Exclusive Reflections</strong>Deeper writings and personal stories that only subscribers experience. These do not get posted anywhere else.</div>
             </div>
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.06)" /><path d="M7 7c0-1.5 1.3-2.5 3-2.5s3 1 3 2.5-1.3 2-3 2.5V12" stroke="#ca903d" strokeWidth="1.2" strokeLinecap="round" /><circle cx="10" cy="14" r="0.8" fill="#ca903d" /></svg></div>
-              <div className="perk-text"><strong>First Access</strong>New content, events, merch drops, collaborations. Subscribers hear about it first before it goes public.</div>
+              <div data-no-highlight className="perk-text"><strong>First Access</strong>New content, events, merch drops, collaborations. Subscribers hear about it first before it goes public.</div>
             </div>
             <div className="perk">
               <div className="perk-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v7l4.5 2.5" stroke="#ca903d" strokeWidth="1.5" strokeLinecap="round" /><circle cx="10" cy="10" r="7.5" stroke="#ca903d" strokeWidth="1.5" fill="rgba(202,144,61,0.06)" /></svg></div>
-              <div className="perk-text"><strong>Monthly Challenges</strong>Guided prompts to stretch your mindset, strengthen your foundation, and grow your roots deeper every month.</div>
+              <div data-no-highlight className="perk-text"><strong>Monthly Challenges</strong>Guided prompts to stretch your mindset, strengthen your foundation, and grow your roots deeper every month.</div>
             </div>
           </div>
           {newsletterSubmitted ? (
@@ -1164,7 +1202,7 @@ export default function Home() {
               <button type="submit">Join</button>
             </form>
           )}
-          <p className="signup-note">No spam. No fluff. Just substance. Unsubscribe anytime.</p>
+          <p data-no-highlight className="signup-note">No spam. No fluff. Just substance. Unsubscribe anytime.</p>
         </div>
       </section>
 

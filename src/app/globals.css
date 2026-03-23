@@ -3,33 +3,39 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* VOICE HIGHLIGHT — paragraph-level: lights up each paragraph as voice reads */
-/* When a section is being read, dim all paragraphs by default */
-.voice-reading .hl-para {
+/* VOICE HIGHLIGHT — word-level karaoke: lights up each word as voice reads */
+.vw {
+  transition: color 0.12s ease, opacity 0.12s ease, text-shadow 0.12s ease;
+}
+/* When a section is being read, dim all words by default */
+.voice-reading .vw {
   opacity: 0.25;
-  transition: opacity 0.6s ease, color 0.6s ease, text-shadow 0.6s ease;
 }
-/* Current paragraph — bright with gold glow */
-.voice-reading .hl-para.hl-active {
+/* Current word — gold glow */
+.vw.vw-active {
   opacity: 1 !important;
-  text-shadow: 0 0 8px rgba(202,144,61,0.15);
+  color: #f5d89a !important;
+  text-shadow: 0 0 12px rgba(202,144,61,0.6), 0 0 30px rgba(202,144,61,0.3);
 }
-/* Already-read paragraphs — normal brightness */
-.voice-reading .hl-para.hl-read {
+/* Already-read words — normal brightness */
+.vw.vw-read {
   opacity: 0.85;
+  color: inherit;
   text-shadow: none;
 }
-/* Fundamentals — extra glow when active */
+/* Fundamentals — extra glow and scale when active */
 .fundamental-word {
   transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease, transform 0.5s ease;
   margin: 0;
 }
-.voice-reading .fundamental-word.hl-active {
+.fundamental-word .vw.vw-active {
   color: #f5d89a !important;
   text-shadow: 0 0 20px rgba(202,144,61,0.8), 0 0 50px rgba(202,144,61,0.4), 0 0 80px rgba(202,144,61,0.2);
+}
+.voice-reading .fundamental-word:has(.vw-active) {
   transform: scale(1.08);
 }
-.voice-reading .fundamental-word:not(.hl-active):not(.hl-read) {
+.voice-reading .fundamental-word:not(:has(.vw-active)):not(:has(.vw-read)) {
   opacity: 0.3;
 }
 
