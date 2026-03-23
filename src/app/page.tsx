@@ -113,7 +113,9 @@ function useVoiceSystem(entered: boolean) {
       }
       if (!audioRef.current) return;
       audioRef.current.src = `/audio/${sectionId}.mp3`;
-      audioRef.current.playbackRate = 1.0;
+      // Slow voice slightly for emotional sections so speech flows with music
+      const sectionSpeed: Record<string, number> = { ivette: 0.94, memorial: 0.92 };
+      audioRef.current.playbackRate = sectionSpeed[sectionId] ?? 1.0;
       audioRef.current.volume = 0;
       currentRef.current = sectionId;
       setActiveSection(sectionId);
@@ -138,131 +140,88 @@ function useVoiceSystem(entered: boolean) {
         const el = document.getElementById(sectionId);
         const audio = audioRef.current;
         if (el && audio && autoScrollRef.current) {
-          // Memorial: scroll to top once, then stop — let the user read at their own pace
-          // Voice keeps playing, music keeps playing, but no progressive scrolling
-          if (sectionId === "memorial") {
-            el.scrollIntoView({ behavior: "smooth", block: "start" });
-          } else {
-            let currentY = window.scrollY;
-            const tick = () => {
-              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
-              if (!autoScrollRef.current || userScrolledRef.current) {
-                scrollTimerRef.current = requestAnimationFrame(tick);
-                return;
-              }
-              // Recalculate position each frame to handle layout shifts from image loading
-              const rect = el.getBoundingClientRect();
-              const anchorTop = window.scrollY + rect.top - 60;
-              const sectionHeight = el.scrollHeight;
-              const viewHeight = window.innerHeight;
-              const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
-              const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-              const targetY = anchorTop + scrollRange * progress;
-              // Lerp toward target — higher ease for responsiveness
-              currentY += (targetY - currentY) * 0.06;
-              window.scrollTo(0, Math.round(currentY));
+          // Memorial: slower lerp so Valerie and Betty bios scroll at a readable pace
+          const lerpSpeed = sectionId === "memorial" ? 0.03 : 0.06;
+          let currentY = window.scrollY;
+          const tick = () => {
+            if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
+            if (!autoScrollRef.current || userScrolledRef.current) {
               scrollTimerRef.current = requestAnimationFrame(tick);
-            };
+              return;
+            }
+            // Recalculate position each frame to handle layout shifts from image loading
+            const rect = el.getBoundingClientRect();
+            const anchorTop = window.scrollY + rect.top - 60;
+            const sectionHeight = el.scrollHeight;
+            const viewHeight = window.innerHeight;
+            const scrollRange = Math.max(0, sectionHeight - viewHeight + 100);
+            const progress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+            const targetY = anchorTop + scrollRange * progress;
+            // Lerp toward target — memorial scrolls slower for readability
+            currentY += (targetY - currentY) * lerpSpeed;
+            window.scrollTo(0, Math.round(currentY));
             scrollTimerRef.current = requestAnimationFrame(tick);
-          }
+          };
+          scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Word-level highlight — lights up each word as the voice reads it
-        // Skip memorial — voiceover reads a poetic tribute while Valerie and Betty bios are displayed
+        // Paragraph-level highlight — lights up each paragraph as the voice reads it
+        // Skip memorial — voiceover reads a poetic tribute while bios are displayed
         if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
         if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
         if (el && audio && sectionId !== "memorial") {
-          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
+          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text, .fundamental-word")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
           if (textEls.length > 0) {
             el.classList.add("voice-reading");
-            // Store original HTML so we can restore after voice finishes
-            const originals = new Map<HTMLElement, string>();
-            textEls.forEach(t => originals.set(t, t.innerHTML));
+            // Tag each element for paragraph-level highlighting
+            textEls.forEach(t => t.classList.add("hl-para"));
 
-            // Walk text nodes and wrap every word in a <span class="vw">
-            const allWords: HTMLSpanElement[] = [];
-            const paragraphEndIndices: number[] = [];
+            // Weight each paragraph by text length (proxy for speech duration)
+            const weights = textEls.map(t => {
+              const len = (t.textContent || "").trim().length;
+              return Math.max(len, 10) + 15; // base + pause between paragraphs
+            });
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            const cumulative: number[] = [];
+            let wSum = 0;
+            for (const w of weights) { wSum += w / totalWeight; cumulative.push(wSum); }
 
-            for (const textEl of textEls) {
-              const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, null);
-              const textNodes: Text[] = [];
-              while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-
-              for (const node of textNodes) {
-                const text = node.textContent;
-                if (!text || !text.trim()) continue;
-                const frag = document.createDocumentFragment();
-                const parts = text.split(/(\s+)/);
-                for (const part of parts) {
-                  if (/^\s+$/.test(part) || part === "") {
-                    frag.appendChild(document.createTextNode(part));
-                  } else {
-                    const span = document.createElement("span");
-                    span.className = "vw";
-                    span.textContent = part;
-                    frag.appendChild(span);
-                    allWords.push(span);
-                  }
-                }
-                node.parentNode!.replaceChild(frag, node);
+            let lastActiveIdx = -1;
+            const hlTick = () => {
+              if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
+                return;
               }
-              // Mark paragraph boundary for pause weighting
-              if (allWords.length > 0) paragraphEndIndices.push(allWords.length - 1);
-            }
-
-            if (allWords.length > 0) {
-              // Weight each word: longer words take longer to say, pauses at punctuation and paragraph breaks
-              const weights = allWords.map((span, i) => {
-                const word = span.textContent || "";
-                let w = Math.max(word.length, 3);
-                if (/[.!?]$/.test(word)) w += 12;
-                if (/[,;:]$/.test(word)) w += 5;
-                if (paragraphEndIndices.includes(i)) w += 20;
-                if (span.closest(".fundamental-word")) w = Math.max(w, word.length * 2.5);
-                return w;
-              });
-
-              const totalWeight = weights.reduce((a, b) => a + b, 0);
-              const cumulative: number[] = [];
-              let wSum = 0;
-              for (const w of weights) { wSum += w / totalWeight; cumulative.push(wSum); }
-
-              let lastActiveIdx = -1;
-              const hlTick = () => {
-                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                  if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
-                  return;
+              const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
+              // End highlighting slightly before audio ends (voice trails off)
+              const progress = Math.max(0, rawProgress * 0.88);
+              let activeIdx = 0;
+              for (let i = 0; i < cumulative.length; i++) {
+                if (progress < cumulative[i]) { activeIdx = i; break; }
+                activeIdx = i;
+              }
+              if (activeIdx !== lastActiveIdx) {
+                // Mark previous paragraphs as read
+                for (let i = Math.max(0, lastActiveIdx); i < activeIdx; i++) {
+                  textEls[i].classList.remove("hl-active");
+                  textEls[i].classList.add("hl-read");
                 }
-                const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-                const progress = Math.max(0, rawProgress * 0.82);
-                let activeIdx = 0;
-                for (let i = 0; i < cumulative.length; i++) {
-                  if (progress < cumulative[i]) { activeIdx = i; break; }
-                  activeIdx = i;
+                if (lastActiveIdx >= 0 && lastActiveIdx < textEls.length) {
+                  textEls[lastActiveIdx].classList.remove("hl-active");
+                  textEls[lastActiveIdx].classList.add("hl-read");
                 }
-                if (activeIdx !== lastActiveIdx) {
-                  // Mark all words between last and current as read
-                  for (let i = Math.max(0, lastActiveIdx); i < activeIdx; i++) {
-                    allWords[i].classList.remove("vw-active");
-                    allWords[i].classList.add("vw-read");
-                  }
-                  // Light up current word
-                  if (lastActiveIdx >= 0 && lastActiveIdx < allWords.length) {
-                    allWords[lastActiveIdx].classList.remove("vw-active");
-                    allWords[lastActiveIdx].classList.add("vw-read");
-                  }
-                  allWords[activeIdx].classList.add("vw-active");
-                  allWords[activeIdx].classList.remove("vw-read");
-                  lastActiveIdx = activeIdx;
-                }
-                highlightTimerRef.current = requestAnimationFrame(hlTick);
-              };
+                // Light up current paragraph
+                textEls[activeIdx].classList.add("hl-active");
+                textEls[activeIdx].classList.remove("hl-read");
+                lastActiveIdx = activeIdx;
+              }
               highlightTimerRef.current = requestAnimationFrame(hlTick);
-            }
+            };
+            highlightTimerRef.current = requestAnimationFrame(hlTick);
 
-            // Store cleanup — restores original HTML, removing all word spans
+            // Cleanup — remove highlight classes
             wordCleanupRef.current = () => {
               el.classList.remove("voice-reading");
-              originals.forEach((html, elem) => { elem.innerHTML = html; });
+              textEls.forEach(t => { t.classList.remove("hl-para", "hl-active", "hl-read"); });
             };
           }
         }
@@ -601,7 +560,16 @@ export default function Home() {
 
   // Pause voice + music when video plays, resume all when it ends
   const videoEndedNaturally = useRef(false);
+  const voiceEnabledRef = useRef(voice.enabled);
+  const voicePauseRef = useRef(voice.pause);
+  const voiceAudioRef = useRef(voice.audioRef);
+  voiceEnabledRef.current = voice.enabled;
+  voicePauseRef.current = voice.pause;
+  voiceAudioRef.current = voice.audioRef;
+  const musicEnabledRef = useRef(musicEnabled);
+  musicEnabledRef.current = musicEnabled;
   useEffect(() => {
+    if (!entered) return; // Video element doesn't exist until user enters
     const video = founderVideoRef.current;
     if (!video) return;
 
@@ -621,8 +589,8 @@ export default function Home() {
     window.addEventListener("btb-play-founder-video", onFounderVideoSignal);
 
     const onPlay = () => {
-      musicWasEnabled.current = musicEnabled;
-      voice.pause();
+      musicWasEnabled.current = musicEnabledRef.current;
+      voicePauseRef.current();
       setMusicEnabled(false);
       videoEndedNaturally.current = false;
     };
@@ -634,10 +602,9 @@ export default function Home() {
     const onEnded = () => {
       videoEndedNaturally.current = true;
       if (musicWasEnabled.current) setMusicEnabled(true);
-      // Advance voice to education section (next after founder)
-      if (voice.enabled && voice.audioRef.current) {
+      // Advance voice to ivette section (next after founder)
+      if (voiceEnabledRef.current && voiceAudioRef.current.current) {
         setTimeout(() => {
-          // Dispatch to voice system to continue from education
           window.dispatchEvent(new CustomEvent("btb-resume-after-video"));
         }, 1000);
       }
@@ -651,7 +618,7 @@ export default function Home() {
       video.removeEventListener("pause", onPause);
       video.removeEventListener("ended", onEnded);
     };
-  }, [musicEnabled, voice]);
+  }, [entered]);
 
   if (!entered) {
     return (
@@ -883,16 +850,7 @@ export default function Home() {
                 <p style={{ color: "var(--text-bright)", fontStyle: "italic" }}>Because principles outlive people. And foundations outlast&nbsp;applause.</p>
               </div>
 
-              {/* FOUNDER VIDEO — plays after voice finishes speech */}
-              <div className="founder-video-wrapper">
-                <video ref={founderVideoRef} controls playsInline preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
-                  <source src="/video/founder-video.mp4" type="video/mp4" />
-                  <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-
-              {/* The Why — Daughters (immediately after video) */}
+              {/* The Why — Daughters (voice flows into their pictures) */}
               <div style={{ marginTop: 60 }}>
                 <p style={{ fontSize: "0.85rem", color: "var(--gold)", letterSpacing: 4, textTransform: "uppercase", marginBottom: 30, textAlign: "center" }}>The Why</p>
                 <div style={{ display: "flex", gap: 30, justifyContent: "center", flexWrap: "wrap", marginBottom: 30 }}>
@@ -910,6 +868,15 @@ export default function Home() {
                   </div>
                 </div>
                 <p style={{ color: "var(--gold)", fontSize: "1.3rem", fontStyle: "italic", marginTop: 30, textAlign: "center", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.9 }}>It tells the world this is not ego driven. It is generational. That makes the movement real.</p>
+              </div>
+
+              {/* FOUNDER VIDEO — plays after voice finishes speech, below daughters */}
+              <div className="founder-video-wrapper">
+                <video ref={founderVideoRef} controls playsInline preload="auto" poster="/images/hero-seal.png" style={{ background: "var(--bg-deep)" }}>
+                  <source src="/video/founder-video.mp4" type="video/mp4" />
+                  <track kind="captions" src="/video/founder-video.vtt" srcLang="en" label="English" default />
+                  Your browser does not support the video tag.
+                </video>
               </div>
             </div>
 
