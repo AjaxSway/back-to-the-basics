@@ -25,8 +25,6 @@ function useVoiceSystem(entered: boolean) {
   const transitioningRef = useRef(false); // true during auto-advance gap between sections
   const playAndScrollRef = useRef<((id: string, force?: boolean) => Promise<void>) | null>(null);
   const bootedRef = useRef(false); // true after first section starts — blocks observer during startup
-  const highlightTimerRef = useRef<number | null>(null);
-  const wordCleanupRef = useRef<(() => void) | null>(null);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
@@ -74,9 +72,6 @@ function useVoiceSystem(entered: boolean) {
           fadeOut();
           currentRef.current = null;
           if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
-          if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-          // Clean up word-level highlights and restore original HTML
-          if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
           document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
         }
       }
@@ -114,7 +109,7 @@ function useVoiceSystem(entered: boolean) {
       if (!audioRef.current) return;
       audioRef.current.src = `/audio/${sectionId}.mp3`;
       // Slow voice slightly for emotional sections so speech flows with music
-      const sectionSpeed: Record<string, number> = { ivette: 0.94, memorial: 0.92 };
+      const sectionSpeed: Record<string, number> = { ivette: 0.94, memorial: 0.88 };
       audioRef.current.playbackRate = sectionSpeed[sectionId] ?? 1.0;
       audioRef.current.volume = 0;
       currentRef.current = sectionId;
@@ -164,105 +159,8 @@ function useVoiceSystem(entered: boolean) {
           };
           scrollTimerRef.current = requestAnimationFrame(tick);
         }
-        // Word-level highlight — lights up each word as the voice reads it
-        // Skip memorial — voiceover reads a poetic tribute while bios are displayed
-        if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-        if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
-        if (el && audio && sectionId !== "memorial") {
-          const textEls = Array.from(el.querySelectorAll("p, h2, h3, h4, .mission-principles, .memorial-text, .pillar-desc p, .testimonial-body, .perk-text")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
-          if (textEls.length > 0) {
-            el.classList.add("voice-reading");
-            const originals = new Map<HTMLElement, string>();
-            textEls.forEach(t => originals.set(t, t.innerHTML));
-
-            // Wrap every word in a <span class="vw">
-            const allWords: HTMLSpanElement[] = [];
-            const paragraphStarts: number[] = [0];
-
-            for (const textEl of textEls) {
-              const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, null);
-              const textNodes: Text[] = [];
-              while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
-              for (const node of textNodes) {
-                const text = node.textContent;
-                if (!text || !text.trim()) continue;
-                const frag = document.createDocumentFragment();
-                const parts = text.split(/(\s+)/);
-                for (const part of parts) {
-                  if (/^\s+$/.test(part) || part === "") {
-                    frag.appendChild(document.createTextNode(part));
-                  } else {
-                    const span = document.createElement("span");
-                    span.className = "vw";
-                    span.textContent = part;
-                    frag.appendChild(span);
-                    allWords.push(span);
-                  }
-                }
-                node.parentNode!.replaceChild(frag, node);
-              }
-              paragraphStarts.push(allWords.length);
-            }
-
-            if (allWords.length > 0) {
-              // Simple syllable estimate: every ~3 characters is roughly one syllable
-              // Speech rate is fairly constant per syllable, so character count is a good proxy
-              const weights = allWords.map((span, i) => {
-                const word = span.textContent || "";
-                // Base weight: character count (proxy for syllables/speech time)
-                let w = word.length;
-                // Sentence endings — natural pause
-                if (/[.!?]$/.test(word)) w += 6;
-                // Commas, colons — slight pause
-                if (/[,;:]$/.test(word)) w += 3;
-                // Paragraph boundaries — breath pause
-                if (paragraphStarts.includes(i + 1)) w += 10;
-                return Math.max(w, 2);
-              });
-
-              const totalWeight = weights.reduce((a, b) => a + b, 0);
-              const cumulative: number[] = [];
-              let wSum = 0;
-              for (const w of weights) { wSum += w / totalWeight; cumulative.push(wSum); }
-
-              let lastActiveIdx = -1;
-              const hlTick = () => {
-                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
-                  if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
-                  return;
-                }
-                const rawProgress = audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-                // Tiny lead (2%) keeps highlighting feeling "on time" vs the voice
-                const progress = Math.min(1, rawProgress * 1.02);
-                let activeIdx = 0;
-                for (let i = 0; i < cumulative.length; i++) {
-                  if (progress < cumulative[i]) { activeIdx = i; break; }
-                  activeIdx = i;
-                }
-                if (activeIdx !== lastActiveIdx) {
-                  for (let i = Math.max(0, lastActiveIdx); i < activeIdx; i++) {
-                    allWords[i].classList.remove("vw-active");
-                    allWords[i].classList.add("vw-read");
-                  }
-                  if (lastActiveIdx >= 0 && lastActiveIdx < allWords.length) {
-                    allWords[lastActiveIdx].classList.remove("vw-active");
-                    allWords[lastActiveIdx].classList.add("vw-read");
-                  }
-                  allWords[activeIdx].classList.add("vw-active");
-                  allWords[activeIdx].classList.remove("vw-read");
-                  lastActiveIdx = activeIdx;
-                }
-                highlightTimerRef.current = requestAnimationFrame(hlTick);
-              };
-              highlightTimerRef.current = requestAnimationFrame(hlTick);
-            }
-
-            wordCleanupRef.current = () => {
-              el.classList.remove("voice-reading");
-              originals.forEach((html, elem) => { elem.innerHTML = html; });
-            };
-          }
-        }
+        // Section glow while voice is reading
+        if (el) el.classList.add("voice-reading");
       } catch {
         unlockedRef.current = false;
         setActiveSection(null);
@@ -279,6 +177,11 @@ function useVoiceSystem(entered: boolean) {
     const finishedId = currentRef.current;
     currentRef.current = null;
     setActiveSection(null);
+    // Remove glow from finished section
+    if (finishedId) {
+      const el = document.getElementById(finishedId);
+      if (el) el.classList.remove("voice-reading");
+    }
     if (finishedId) {
       // When founder voice finishes, signal to play the video instead of advancing
       if (finishedId === "founder") {
@@ -343,9 +246,6 @@ function useVoiceSystem(entered: boolean) {
 
   const stop = useCallback(() => {
     if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
-    if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
-    // Restore original HTML and remove word spans
-    if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
     document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
     if (audioRef.current) {
       audioRef.current.pause();
@@ -952,6 +852,7 @@ export default function Home() {
           <div className="founder-section">
             <div style={{ marginTop: 0 }}>
               <span className="section-label">The Foundation</span>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", fontStyle: "italic", textAlign: "center", maxWidth: 620, margin: "20px auto 0", lineHeight: 1.9 }}>A brother&#39;s voice speaks while you read their stories in your own time.</p>
 
               {/* Valerie */}
               <div className="memorial-person clearfix" style={{ marginTop: 50 }}>
@@ -1247,6 +1148,12 @@ export default function Home() {
             </div>
           </div>
           <div className="footer-bottom">
+            <button className="back-to-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Back to Top
+            </button>
             <p className="footer-llc">Back to the Basics Movement LLC</p>
             <p className="footer-copy">&copy; 2026 Back to the Basics Movement. All rights reserved. Structure builds longevity.</p>
           </div>

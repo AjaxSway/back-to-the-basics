@@ -3,40 +3,10 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* VOICE HIGHLIGHT — word-level karaoke: lights up each word as voice reads */
-.vw {
-  transition: color 0.12s ease, opacity 0.12s ease, text-shadow 0.12s ease;
-}
-/* When a section is being read, dim all words by default */
-.voice-reading .vw {
-  opacity: 0.25;
-}
-/* Current word — gold glow */
-.vw.vw-active {
-  opacity: 1 !important;
-  color: #f5d89a !important;
-  text-shadow: 0 0 12px rgba(202,144,61,0.6), 0 0 30px rgba(202,144,61,0.3);
-}
-/* Already-read words — normal brightness */
-.vw.vw-read {
-  opacity: 0.85;
-  color: inherit;
-  text-shadow: none;
-}
-/* Fundamentals — extra glow and scale when active */
+/* Fundamentals — visual emphasis */
 .fundamental-word {
   transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease, transform 0.5s ease;
   margin: 0;
-}
-.fundamental-word .vw.vw-active {
-  color: #f5d89a !important;
-  text-shadow: 0 0 20px rgba(202,144,61,0.8), 0 0 50px rgba(202,144,61,0.4), 0 0 80px rgba(202,144,61,0.2);
-}
-.voice-reading .fundamental-word:has(.vw-active) {
-  transform: scale(1.08);
-}
-.voice-reading .fundamental-word:not(:has(.vw-active)):not(:has(.vw-read)) {
-  opacity: 0.3;
 }
 
 /* Prevent orphan words — no single word dangling alone on the last line */
@@ -643,6 +613,16 @@ footer {
   border-top: 1px solid rgba(202,144,61,0.06);
   padding-top: 30px; text-align: center;
 }
+
+.back-to-top {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: none; border: 1px solid rgba(202,144,61,0.25);
+  color: var(--gold-dim); font-family: 'Montserrat', sans-serif;
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 3px;
+  text-transform: uppercase; padding: 12px 28px; cursor: pointer;
+  border-radius: 4px; transition: all 0.3s; margin-bottom: 30px;
+}
+.back-to-top:hover { border-color: var(--gold); color: var(--gold); }
 
 .footer-llc { font-size: 0.75rem; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 6px; }
 .footer-copy { font-size: 0.72rem; color: rgba(255,255,255,0.1); letter-spacing: 2px; }
