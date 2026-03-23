@@ -25,6 +25,8 @@ function useVoiceSystem(entered: boolean) {
   const transitioningRef = useRef(false); // true during auto-advance gap between sections
   const playAndScrollRef = useRef<((id: string, force?: boolean) => Promise<void>) | null>(null);
   const bootedRef = useRef(false); // true after first section starts — blocks observer during startup
+  const highlightTimerRef = useRef<number | null>(null);
+  const wordCleanupRef = useRef<(() => void) | null>(null);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
@@ -72,6 +74,8 @@ function useVoiceSystem(entered: boolean) {
           fadeOut();
           currentRef.current = null;
           if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
+          if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
+          if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
           document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
         }
       }
@@ -109,7 +113,7 @@ function useVoiceSystem(entered: boolean) {
       if (!audioRef.current) return;
       audioRef.current.src = `/audio/${sectionId}.mp3`;
       // Slow voice slightly for emotional sections so speech flows with music
-      const sectionSpeed: Record<string, number> = { ivette: 0.94, memorial: 0.88 };
+      const sectionSpeed: Record<string, number> = { ivette: 0.94, memorial: 0.84 };
       audioRef.current.playbackRate = sectionSpeed[sectionId] ?? 1.0;
       audioRef.current.volume = 0;
       currentRef.current = sectionId;
@@ -136,7 +140,7 @@ function useVoiceSystem(entered: boolean) {
         const audio = audioRef.current;
         if (el && audio && autoScrollRef.current) {
           // Memorial: slower lerp so Valerie and Betty bios scroll at a readable pace
-          const lerpSpeed = sectionId === "memorial" ? 0.03 : 0.06;
+          const lerpSpeed = sectionId === "memorial" ? 0.015 : sectionId === "founder" ? 0.04 : 0.06;
           let currentY = window.scrollY;
           const tick = () => {
             if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) return;
@@ -161,6 +165,87 @@ function useVoiceSystem(entered: boolean) {
         }
         // Section glow while voice is reading
         if (el) el.classList.add("voice-reading");
+        // Word-level highlight — Ivette's section ONLY
+        if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
+        if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
+        if (el && audio && sectionId === "ivette") {
+          const textEls = Array.from(el.querySelectorAll("p")).filter(t => !t.hasAttribute("data-no-highlight")) as HTMLElement[];
+          if (textEls.length > 0) {
+            const originals = new Map<HTMLElement, string>();
+            textEls.forEach(t => originals.set(t, t.innerHTML));
+            const allWords: HTMLSpanElement[] = [];
+            const paragraphStarts: number[] = [0];
+            for (const textEl of textEls) {
+              const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT, null);
+              const textNodes: Text[] = [];
+              while (walker.nextNode()) textNodes.push(walker.currentNode as Text);
+              for (const node of textNodes) {
+                const text = node.textContent;
+                if (!text || !text.trim()) continue;
+                const frag = document.createDocumentFragment();
+                const parts = text.split(/(\s+)/);
+                for (const part of parts) {
+                  if (/^\s+$/.test(part) || part === "") {
+                    frag.appendChild(document.createTextNode(part));
+                  } else {
+                    const span = document.createElement("span");
+                    span.className = "vw";
+                    span.textContent = part;
+                    frag.appendChild(span);
+                    allWords.push(span);
+                  }
+                }
+                node.parentNode!.replaceChild(frag, node);
+              }
+              paragraphStarts.push(allWords.length);
+            }
+            if (allWords.length > 0) {
+              const weights = allWords.map((span, i) => {
+                const word = span.textContent || "";
+                let w = word.length;
+                if (/[.!?]$/.test(word)) w += 6;
+                if (/[,;:]$/.test(word)) w += 3;
+                if (paragraphStarts.includes(i + 1)) w += 10;
+                return Math.max(w, 2);
+              });
+              const totalWeight = weights.reduce((a, b) => a + b, 0);
+              const cumulative: number[] = [];
+              let wSum = 0;
+              for (const w of weights) { wSum += w / totalWeight; cumulative.push(wSum); }
+              let lastActiveIdx = -1;
+              const hlTick = () => {
+                if (!audio || audio.paused || audio.ended || currentRef.current !== sectionId) {
+                  if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
+                  return;
+                }
+                const progress = Math.min(1, (audio.currentTime / audio.duration) * 1.02);
+                let activeIdx = 0;
+                for (let i = 0; i < cumulative.length; i++) {
+                  if (progress < cumulative[i]) { activeIdx = i; break; }
+                  activeIdx = i;
+                }
+                if (activeIdx !== lastActiveIdx) {
+                  for (let i = Math.max(0, lastActiveIdx); i < activeIdx; i++) {
+                    allWords[i].classList.remove("vw-active");
+                    allWords[i].classList.add("vw-read");
+                  }
+                  if (lastActiveIdx >= 0 && lastActiveIdx < allWords.length) {
+                    allWords[lastActiveIdx].classList.remove("vw-active");
+                    allWords[lastActiveIdx].classList.add("vw-read");
+                  }
+                  allWords[activeIdx].classList.add("vw-active");
+                  allWords[activeIdx].classList.remove("vw-read");
+                  lastActiveIdx = activeIdx;
+                }
+                highlightTimerRef.current = requestAnimationFrame(hlTick);
+              };
+              highlightTimerRef.current = requestAnimationFrame(hlTick);
+            }
+            wordCleanupRef.current = () => {
+              originals.forEach((html, elem) => { elem.innerHTML = html; });
+            };
+          }
+        }
       } catch {
         unlockedRef.current = false;
         setActiveSection(null);
@@ -246,6 +331,8 @@ function useVoiceSystem(entered: boolean) {
 
   const stop = useCallback(() => {
     if (scrollTimerRef.current) cancelAnimationFrame(scrollTimerRef.current);
+    if (highlightTimerRef.current) cancelAnimationFrame(highlightTimerRef.current);
+    if (wordCleanupRef.current) { wordCleanupRef.current(); wordCleanupRef.current = null; }
     document.querySelectorAll(".voice-reading").forEach(el => el.classList.remove("voice-reading"));
     if (audioRef.current) {
       audioRef.current.pause();
@@ -661,7 +748,7 @@ export default function Home() {
         <img src="/images/hero-seal.png" alt="Back to the Basics Movement Seal" className="hero-seal" />
         <h1 className="hero-title">Back to the Basics</h1>
         <p className="hero-subtitle">Restoring clarity in a distracted world.</p>
-        <p className="hero-tagline">Guarded &middot; Grounded &middot; Grateful</p>
+        <p className="hero-tagline gold-glow">Guarded &middot; Grounded &middot; Grateful</p>
         <p style={{ fontSize: "1.15rem", color: "var(--text)", maxWidth: 700, margin: "0 auto 50px", lineHeight: 1.9, animation: "fadeUp 1.5s ease-out 0.9s both" }}>
           A movement dedicated to rebuilding strong individuals, strong families, and strong communities through clarity, discipline, and gratitude.
         </p>
@@ -680,7 +767,7 @@ export default function Home() {
           <p style={{ textAlign: "center", fontSize: "1.25rem", maxWidth: 720, margin: "0 auto 20px" }}>Back to the Basics Movement exists to restore clarity in a&nbsp;distracted&nbsp;world.</p>
           <p style={{ textAlign: "center", fontSize: "1.25rem", maxWidth: 720, margin: "0 auto 20px" }}>We are not here to add noise. We are here to return to what matters.</p>
           <div className="gold-line" />
-          <div className="mission-principles" style={{ textAlign: "center" }}>
+          <div className="mission-principles gold-glow" style={{ textAlign: "center" }}>
             Guarded in Conviction.<br />
             Grounded in Discipline.<br />
             Grateful in Strength.
@@ -701,13 +788,13 @@ export default function Home() {
           <span className="section-label">The Purpose</span>
           <h2 className="section-title">Why This Movement Exists</h2>
           <p style={{ fontSize: "1.2rem", lineHeight: 2.1, color: "var(--text)", maxWidth: 720, margin: "0 auto 30px" }}>The Back to the Basics Movement was created in response to a world that has become distracted, reactive, and disconnected from the principles that build strong lives.</p>
-          <p style={{ fontSize: "1.15rem", lineHeight: 2, color: "var(--text-muted)", marginBottom: 30 }}>This movement calls people back to the fundamentals:</p>
-          <div className="fundamentals-list" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.7rem", fontWeight: 300, color: "var(--text-bright)", lineHeight: 2.4, marginBottom: 40, textAlign: "center" }}>
-            <p className="fundamental-word">Clarity</p>
-            <p className="fundamental-word">Truth</p>
-            <p className="fundamental-word">Discipline</p>
-            <p className="fundamental-word">Gratitude</p>
-            <p className="fundamental-word">Structure</p>
+          <p className="gold-glow" style={{ fontSize: "1.15rem", lineHeight: 2, marginBottom: 30 }}>This movement calls people back to the fundamentals:</p>
+          <div className="fundamentals-list" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.7rem", fontWeight: 300, lineHeight: 2.4, marginBottom: 40, textAlign: "center" }}>
+            <p className="fundamental-word gold-glow">Clarity</p>
+            <p className="fundamental-word gold-glow">Truth</p>
+            <p className="fundamental-word gold-glow">Discipline</p>
+            <p className="fundamental-word gold-glow">Gratitude</p>
+            <p className="fundamental-word gold-glow">Structure</p>
           </div>
           <div className="gold-line" />
           <p style={{ fontSize: "1.25rem", lineHeight: 2, color: "var(--text)", maxWidth: 700, margin: "30px auto 0" }}>When individuals become stronger, families become stronger.<br />When families become stronger, communities become stronger.</p>
@@ -726,21 +813,21 @@ export default function Home() {
               <span className="pillar-trait">Identity Without Noise</span>
               <span className="pillar-trait">Discipline Before Emotion</span>
               <span className="pillar-trait">Structure Before Success</span>
-              <p>Roots run deep when you are planted in purpose. Stay connected to your truth, your values, and the things that keep you centered when the world tries to shake you&nbsp;loose.</p>
+              <p className="gold-glow">Roots run deep when you are planted in purpose. Stay connected to your truth, your values, and the things that keep you centered when the world tries to shake you&nbsp;loose.</p>
             </div>
             <div className="pillar-desc">
               <h3>Guarded</h3>
               <span className="pillar-trait">Protection Without Fear</span>
               <span className="pillar-trait">Boundaries Without Bitterness</span>
               <span className="pillar-trait">Strength Without Ego</span>
-              <p>Not everyone deserves access to your peace. Being guarded is not about shutting people out. It is about knowing what to let in and having the strength to hold that&nbsp;line.</p>
+              <p className="gold-glow">Not everyone deserves access to your peace. Being guarded is not about shutting people out. It is about knowing what to let in and having the strength to hold that&nbsp;line.</p>
             </div>
             <div className="pillar-desc">
               <h3>Grateful</h3>
               <span className="pillar-trait">Humility Anchored in Strength</span>
               <span className="pillar-trait">Purpose Without Pride</span>
               <span className="pillar-trait">Fire Without Chaos</span>
-              <p>Gratitude shifts everything. When you recognize what you already have, you stop chasing what you do not need. A grateful heart is the richest thing you can&nbsp;carry.</p>
+              <p className="gold-glow">Gratitude shifts everything. When you recognize what you already have, you stop chasing what you do not need. A grateful heart is the richest thing you can&nbsp;carry.</p>
             </div>
           </div>
         </div>
@@ -750,7 +837,7 @@ export default function Home() {
       <section id="alanwatts" className={sc("alanwatts", "anchor-visual-section")}>
         <div className="content-mid reveal" style={{ textAlign: "center" }}>
           <img src="/images/alan_watts_reflection.png" alt="Alan Watts quote over golden sunrise and mountains" className="anchor-visual-img" />
-          <p style={{ fontSize: "2rem", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, color: "var(--text-bright)", maxWidth: 720, margin: "40px auto 0", letterSpacing: 1 }}>Back to the Basics is about waking&nbsp;up.</p>
+          <p className="gold-glow" style={{ fontSize: "2rem", fontFamily: "'Cormorant Garamond', serif", fontWeight: 300, maxWidth: 720, margin: "40px auto 0", letterSpacing: 1 }}>Back to the Basics is about waking&nbsp;up.</p>
         </div>
       </section>
 
@@ -758,6 +845,7 @@ export default function Home() {
       <section id="stormtree" className={sc("stormtree", "anchor-visual-section")} style={{ background: "var(--bg-main)" }}>
         <div className="content-mid reveal" style={{ textAlign: "center" }}>
           <img src="/images/storm_tree_anchor.png" alt="A mighty tree standing strong through the storm with lightning" className="anchor-visual-img" />
+          <p className="gold-glow" style={{ fontSize: "1.6rem", fontFamily: "'Cormorant Garamond', serif", fontWeight: 600, marginTop: 40, letterSpacing: 3 }}>Back to the Basics Movement</p>
         </div>
       </section>
 
@@ -836,7 +924,7 @@ export default function Home() {
                 <p>Ivette is not a memory. She is the&nbsp;anchor.</p>
                 <p>Where others shaped this movement through legacy, she shapes it through presence. Every single day. She is the one who holds things steady when life gets heavy. She is the calm when the pressure rises. She is the strength that does not need to announce itself because you can feel it the moment she walks into a&nbsp;room.</p>
                 <p>She is the first voice in the morning prayer. She is the hand that reaches across the table to hold yours when words are not enough. She is the one who makes sure the girls know they are protected, that the house has peace, that the family stays rooted no matter what is happening outside those&nbsp;walls.</p>
-                <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.3rem", fontStyle: "italic", color: "var(--text-bright)", lineHeight: 1.9, margin: "30px 0", paddingLeft: 20, borderLeft: "2px solid rgba(202,144,61,0.2)" }}>When she says, &ldquo;Everyone has a Story,&rdquo; she means it. Not as a slogan. As truth. She believes that every person deserves a platform, not to be judged, but to be heard. Not to be fixed, but to be&nbsp;understood.</p>
+                <p className="gold-glow" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.3rem", fontStyle: "italic", lineHeight: 1.9, margin: "30px 0", paddingLeft: 20, borderLeft: "2px solid rgba(202,144,61,0.4)" }}>When she says, &ldquo;Everyone has a Story,&rdquo; she means it. Not as a slogan. As truth. She believes that every person deserves a platform, not to be judged, but to be heard. Not to be fixed, but to be&nbsp;understood.</p>
                 <p>There is a kind of strength that does not crack under pressure. It does not perform. It does not seek credit. It just holds. That is Ivette. She is the reason structure begins at home. She is the reason this movement has a heartbeat. She is proof that being Grounded, Guarded, and Grateful is not just a concept you put on a wall. It is a daily choice. And she makes that choice every morning before anyone else wakes&nbsp;up.</p>
                 <p style={{ marginTop: 30, color: "var(--gold)", fontSize: "1rem", letterSpacing: 1 }}>This movement stands because she&nbsp;stands.</p>
               </div>
@@ -899,10 +987,10 @@ export default function Home() {
           <p style={{ color: "var(--text)", fontSize: "1.15rem", lineHeight: 2, maxWidth: 720, margin: "0 auto 10px", textAlign: "center" }}>These resources help people rebuild clarity, discipline, and structure in daily life.</p>
           <p style={{ color: "var(--gold)", fontSize: "1.1rem", lineHeight: 2, maxWidth: 720, margin: "0 auto 30px", textAlign: "center" }}>No cost. No gatekeeping. Only principles.</p>
           <div className="gold-line" />
-          <p className="education-quote">&ldquo;Everyone has a Story.&rdquo;</p>
-          <p className="education-attr">&mdash; Ivette Bayze</p>
-          <p style={{ color: "var(--text)", fontSize: "1.15rem", lineHeight: 2.1, maxWidth: 720, margin: "0 auto 20px", textAlign: "center" }}>Education here does not mean lectures. It means shared experience. It means real people sitting at the table with real lessons learned the hard way. It means your story matters, and someone else needs to hear it just as much as you need to tell it.</p>
-          <p style={{ color: "var(--text-muted)", fontSize: "1.1rem", lineHeight: 1.95, maxWidth: 700, margin: "0 auto", textAlign: "center" }}>Because wisdom is not owned. It is shared. And there is power in testimony that no textbook could ever replace.</p>
+          <p className="education-quote gold-glow">&ldquo;Everyone has a Story.&rdquo;</p>
+          <p className="education-attr gold-glow">&mdash; Ivette Bayze</p>
+          <p className="gold-glow" style={{ fontSize: "1.15rem", lineHeight: 2.1, maxWidth: 720, margin: "0 auto 20px", textAlign: "center" }}>Education here does not mean lectures. It means shared experience. It means real people sitting at the table with real lessons learned the hard way. It means your story matters, and someone else needs to hear it just as much as you need to tell it.</p>
+          <p className="gold-glow" style={{ fontSize: "1.1rem", lineHeight: 1.95, maxWidth: 700, margin: "0 auto", textAlign: "center" }}>Because wisdom is not owned. It is shared. And there is power in testimony that no textbook could ever replace.</p>
           <div className="education-grid">
             {[
               { title: "The Proving Ground", desc: "30-day structured challenges that test what you say you believe. Morning routines. Financial discipline. Fitness accountability. Real metrics. Real results. No shortcuts.", action: "ENTER THE PROVING GROUND", featured: true },
@@ -1008,7 +1096,7 @@ export default function Home() {
           <span className="section-label">The Growth Engine</span>
           <h2 className="section-title">The Standard</h2>
           <p style={{ fontSize: "1.2rem", lineHeight: 2, color: "var(--text)", maxWidth: 720, margin: "0 auto 40px" }}>Each day we return to the same principles.</p>
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", fontWeight: 300, color: "var(--text-bright)", lineHeight: 2.6 }}>
+          <p className="gold-glow" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", fontWeight: 300, lineHeight: 2.6 }}>
             Clarity in thought.<br />
             Truth in action.<br />
             Discipline in habits.<br />
