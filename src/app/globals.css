@@ -831,6 +831,18 @@ section.voice-reading .reveal { opacity: 1; transform: translateY(0); }
   animation: fadeUp 1.8s ease-out 1.2s both;
 }
 
+/* ENTRY GATE — wide-but-short windows (real browser chrome eating vertical space).
+   Shrinks the crest so it no longer collides with the button below it. */
+@media (min-width: 769px) and (max-height: 850px) {
+  .enter-crest {
+    background-size: 46%;
+    -webkit-mask-image: radial-gradient(ellipse 22vw 18vw at center 45%, black 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse 22vw 18vw at center 45%, black 55%, transparent 100%);
+  }
+  .enter-btn { bottom: max(9%, 40px); }
+  .enter-hint { bottom: max(3%, 16px); }
+}
+
 /* GATE SOUND CONTROL — upper right of entry page */
 .gate-sound-control {
   position: absolute;
