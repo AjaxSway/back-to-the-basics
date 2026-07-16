@@ -768,8 +768,8 @@ section.voice-reading .reveal { opacity: 1; transform: translateY(0); }
   position: absolute;
   inset: 0;
   background: url("/images/entry-seal.png") center 45% / 62% no-repeat;
-  -webkit-mask-image: radial-gradient(ellipse 30% 32% at center 45%, black 35%, transparent 96%);
-  mask-image: radial-gradient(ellipse 30% 32% at center 45%, black 35%, transparent 96%);
+  -webkit-mask-image: radial-gradient(ellipse 30vw 24vw at center 45%, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 30vw 24vw at center 45%, black 55%, transparent 100%);
   z-index: 1;
   animation: sealReveal 2s ease-out, sealZoom 20s ease-in-out infinite alternate 2s;
 }
@@ -971,8 +971,8 @@ section.voice-reading .reveal { opacity: 1; transform: translateY(0); }
   .enter-crest {
     background-size: 85%;
     background-position: center 42%;
-    -webkit-mask-image: radial-gradient(ellipse 40% 13% at center 42%, black 45%, transparent 98%);
-    mask-image: radial-gradient(ellipse 40% 13% at center 42%, black 45%, transparent 98%);
+    -webkit-mask-image: radial-gradient(ellipse 44vw 34vw at center 42%, black 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse 44vw 34vw at center 42%, black 55%, transparent 100%);
   }
   .enter-bg {
     -webkit-mask-image: radial-gradient(ellipse 85% 80% at center, black 25%, transparent 70%);
