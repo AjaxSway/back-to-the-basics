@@ -148,6 +148,13 @@ function useVoiceSystem(entered: boolean) {
               scrollTimerRef.current = requestAnimationFrame(tick);
               return;
             }
+            // Memorial: ease into a slower, more deliberate pace once Betty's tribute begins.
+            // Her portion carries more written content than Valerie's but the same narration
+            // pace, which read as rushing through her. 42.5s lands in the natural pause between
+            // the two stories in memorial.mp3 — re-check this offset if that file is re-recorded.
+            if (sectionId === "memorial" && audio.currentTime > 42.5 && audio.playbackRate > 0.74) {
+              audio.playbackRate = 0.74;
+            }
             // Recalculate position each frame to handle layout shifts from image loading
             const rect = el.getBoundingClientRect();
             const anchorTop = window.scrollY + rect.top - 60;
@@ -290,8 +297,8 @@ function useVoiceSystem(entered: boolean) {
         // Stop voice+scroll after subscribe — keep music playing, let user browse freely
         if (finishedId === "subscribe") return;
         // Longer pause before memorial — let music breathe after Ivette
-        // Longer pause after memorial — transition from George's voice back to female voice at Education
-        const delay = finishedId === "ivette" ? 4000 : finishedId === "memorial" ? 3000 : 1200;
+        // Longer pause after memorial — sit with Valerie and Betty before moving to Education
+        const delay = finishedId === "ivette" ? 4000 : finishedId === "memorial" ? 7000 : 1200;
         // Block the observer from hijacking during the transition gap
         transitioningRef.current = true;
         setTimeout(() => {
