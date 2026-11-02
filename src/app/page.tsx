@@ -1158,7 +1158,7 @@ export default function Home() {
           </div>
           {newsletterSubmitted ? (
             <div className="form-success show">
-              <h3>You're In</h3>
+              <h3>You&apos;re In</h3>
               <p>Watch your inbox — your foundation message is on its way.</p>
             </div>
           ) : (
@@ -1180,21 +1180,7 @@ export default function Home() {
                     body: JSON.stringify({ email: emailInput.value, honeypot }),
                   });
                   const data = await res.json().catch(() => ({ ok: false }));
-                  if (data.ok && data.fallback) {
-                    // Kit not configured — send directly via FormSubmit (browser-side, proven working)
-                    const fd = new FormData();
-                    fd.append("email", emailInput.value);
-                    fd.append("_subject", "Back to the Basics Movement — New Subscriber");
-                    fd.append("_autoresponse", "Welcome to the Back to the Basics Movement.\n\nThank you for joining. This movement exists for a simple reason: to return to the principles that build strong lives.\n\nIn a world filled with noise and distraction, Back to the Basics is a reminder that strength is built through a few timeless principles practiced daily.\n\nYou will receive updates, reflections, and practical insights designed to challenge your thinking and strengthen your foundation.\n\nStrength spreads when it is shared.\n\nGuarded. Grounded. Grateful.\nBack to the Basics Movement\nbacktothebasicsmovement.com");
-                    fd.append("_template", "table");
-                    fd.append("_captcha", "false");
-                    await fetch("https://formsubmit.co/ajax/contact@backtothebasicsmovement.com", {
-                      method: "POST",
-                      headers: { Accept: "application/json" },
-                      body: fd,
-                    });
-                    setNewsletterSubmitted(true);
-                  } else if (data.ok) {
+                  if (data.ok) {
                     setNewsletterSubmitted(true);
                   } else {
                     btn.textContent = data.error || "Something went wrong";

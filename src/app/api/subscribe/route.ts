@@ -36,9 +36,11 @@ export async function POST(req: NextRequest) {
 
       if (!formRes.ok) {
         const errText = await formRes.text();
-        console.error("[Subscribe] Kit form subscribe failed:", formRes.status, errText, "KEY:", KIT_API_KEY?.slice(0,4), "FORM:", KIT_FORM_ID);
-        // Fall through to FormSubmit fallback instead of failing
-        return NextResponse.json({ ok: true, fallback: true, email: sanitizedEmail, name: sanitizedName });
+        console.error("[Subscribe] Kit form subscribe failed:", formRes.status, sanitizeLogText(errText));
+        return NextResponse.json(
+          { ok: false, error: "Subscription service is temporarily unavailable. Please try again soon." },
+          { status: 502 }
+        );
       }
 
       const formData = await formRes.json();
@@ -57,13 +59,26 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, provider: "kit" });
     }
 
-    // FALLBACK: No Kit configured — tell frontend to use direct FormSubmit
-    return NextResponse.json({ ok: true, fallback: true, email: sanitizedEmail, name: sanitizedName });
+    console.error("[Subscribe] Kit is not configured for this deployment.");
+    return NextResponse.json(
+      { ok: false, error: "Subscription service is not configured." },
+      { status: 503 }
+    );
   } catch (err) {
     console.error("[Subscribe] Unexpected error:", err);
-    return NextResponse.json({ ok: true, fallback: true });
+    return NextResponse.json(
+      { ok: false, error: "Subscription service is temporarily unavailable. Please try again soon." },
+      { status: 500 }
+    );
   }
+}
+
+function sanitizeLogText(value: string) {
+  return value
+    .slice(0, 240)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+    .replace(/\b[A-Za-z0-9_-]{24,}\b/g, "[redacted]");
 }
